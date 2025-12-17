@@ -13,42 +13,36 @@ module fifo #(
   output logic [DataWidth-1:0] rd_data_o
 );
 
-  // Pointers
-  logic [PointerWidth-1:0] rd_pointer;
-  logic [PointerWidth-1:0] wr_pointer;
+  // Pointers with wrap-around bit (MSB) for status 
+  logic [PointerWidth:0] rd_ptr, wr_ptr;
 
-  // FIFO
-  logic [DataWidth-1:0] fifo [Depth-1:0];
+  // FIFO memory block
+  logic [DataWidth-1:0] mem [Depth-1:0];
+  
+  // Read/Write validation
+  logic  rd_valid, wr_valid;
+  assign rd_valid = (rd_en_i && !empty_o);
+  assign wr_valid = (wr_en_i && !full_o);
 
-  // Variable
-  integer i;
-  logic [PointerWidth-1:0] count;
-
-  assign empty_o = (count == '0);
-  assign full_o  = (count == Depth);
+  // Status flag logic
+  assign empty_o = (rd_ptr == wr_ptr);
+  assign full_o  = (rd_ptr == {~wr_ptr[PointerWidth], wr_ptr[PointerWidth-1:0]});
 
   always_ff @(posedge clk_i) begin
     if(rst_i) begin
-      rd_pointer = '0;
-      wr_pointer = '0;
-      for (i = 0; i < Depth ; i++) begin
-        fifo[i] = '0;
+      rd_ptr <= '0;
+      wr_ptr <= '0;
+      rd_data_o <= '0;
+    end 
+    else begin
+      if (rd_valid) begin
+        rd_data_o <= mem[rd_ptr[PointerWidth-1:0]];
+        rd_ptr <= rd_ptr + 1;
       end
-    end else if (rd_en_i && !wr_en_i && !empty_s) begin
-      rd_data_o = fifo[rd_pointer];
-      rd_pointer++;
-      count--;
-    end else if (wr_en_i && !rd_en_i && !full_s) begin
-      fifo[wr_pointer] = wr_data_i;
-      wr_pointer++;
-      count++;
-    end else if (wr_en_i && rd_en_i) begin
-      if (!full_s && !empty_s) begin
-        rd_data_o = fifo[rd_pointer];
-        fifo[wr_pointer] = data_i;
-      end
-    end else 
-    ...
+      if (wr_valid) begin
+        mem[wr_ptr[PointerWidth-1:0]] <= wr_data_i;
+        wr_ptr <= wr_ptr + 1;
+      end 
+    end
   end
-
 endmodule
