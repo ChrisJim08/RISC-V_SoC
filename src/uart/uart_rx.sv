@@ -31,49 +31,55 @@ module uart_rx #(
   } uart_state_e;
 
   // State Registers
-  uart_state_e cur_state;
+  uart_state_e state_reg;
   uart_state_e next_state;
 
-  // Count register
-  logic [CountWidth:0] count;
+  // Count registers
+  logic [CountWidth-1:0] count_reg;
+  logic [CountWidth-1:0] next_count;
 
   // Indicates 
   logic sbuff_full;
 
-  // Shift buffer regisers
+  // Shift buffer registers
   logic [DataWidth-1:0] sbuff_reg;
+  logic [DataWidth-1:0] next_sbuff;
 
   always_ff @(posedge clk_i or posedge rst_i) begin : memory_block
     if (rst_i) begin
-      cur_state <= Idle;
+      state_reg <= Idle;
       sbuff_reg <= '0;
-      count     <= '0;
+      count_reg <= '0;
     end else begin
-      cur_state    <= next_state;
-
-      if (cur_state == StartBit) begin
-        count <= '0;
-      end else if (cur_state == DataBits) begin
-        sbuff_reg <= {rxd, sbuff_reg[DataWidth-1:1]};
-        count <= count + 1;
-      end
-
-      //rx_dv_o <= (cur_state == StopBit) ? 1'b1 : 1'b0;
-
+      state_reg <= next_state;
+      count_reg <= next_count;
+      sbuff_reg <= next_sbuff;
     end
   end
-  
-  assign sbuff_full = count[CountWidth];
+
+  assign sbuff_full = (count_reg == CountWidth'(DataWidth-1));
   assign data_o  = sbuff_reg;
 
   always_comb begin : next_state_logic
-    next_state = cur_state;
+    next_state = state_reg;
+    next_count = count_reg;
+    next_sbuff = sbuff_reg;
     rx_dv_o    = 1'b0;
+
     if (tick_i) begin
-      unique case (cur_state)    
-        Idle: if (!rxd) next_state = StartBit;
-        StartBit: next_state = DataBits;
-        DataBits: if (sbuff_full) next_state = StopBit;
+      unique case (state_reg)    
+        Idle: if (!rxd) begin
+          next_state = StartBit;
+        end
+        StartBit: begin
+          next_count = 0'b0;
+          next_state = DataBits;
+        end
+        DataBits: begin
+          next_sbuff = {rxd, sbuff_reg[DataWidth-1:1]};
+          next_count = count_reg + '1;
+          if (sbuff_full) next_state = StopBit;
+        end
         StopBit: begin 
           next_state = Idle;
           rx_dv_o    = 1'b1;
