@@ -19,7 +19,7 @@ module baud_gen #(
   logic  busy;
   assign busy = (tx_busy_i || rx_busy_i);
 
-  logic [MinDivsorWidth-1:0] divsor;
+  logic [MinDivsorWidth-1:0] divsor_reg;
   logic [MinDivsorWidth-1:0] next_divsor;
 
   logic [MinDivsorWidth-1:0] count_reg;
@@ -35,9 +35,9 @@ module baud_gen #(
 
     baudx16_tick_o = 1'b0;
 
-    if ((next_divsor != divsor) && !busy) begin
+    if ((next_divsor != divsor_reg) && !busy) begin
       next_count     = '0;
-    end else if (count_reg == (divsor-1)) begin
+    end else if (count_reg == (divsor_reg-1)) begin
       next_count     = '0;
       baudx16_tick_o = 1'b1;
     end else next_count = count_reg + 1;
@@ -46,11 +46,11 @@ module baud_gen #(
   always_ff @(posedge clk_i) begin
     if (rst_i) begin
       count_reg   <= '0;
-      divsor      <= MinDivsorWidth'(Baud1900Divsor);
+      divsor_reg      <= MinDivsorWidth'(Baud1900Divsor);
     end else begin
       count_reg   <= next_count;
 
-      if (!busy) divsor <= next_divsor;
+      if (!busy) divsor_reg <= next_divsor;
     end
   end
 endmodule 

@@ -1,4 +1,6 @@
-module uart_ctrl (
+module uart_ctrl #(
+  parameter int unsigned DataWidth = 8
+) (
   input  logic        clk_i,
   input  logic        rst_i,
   input  logic        wr_en_i,
@@ -7,10 +9,6 @@ module uart_ctrl (
   input  logic        rx_data_i,
   output logic [7:0]  tx_data_o
 );
-
-  // 
-  // Registers
-  logic [15:0] baud_rate_reg;
 
 
   uart_rx uart_reciever (
@@ -21,8 +19,15 @@ module uart_ctrl (
 
   );
 
-  baud_gen baud_generator (
-    
-  );
+  baud_gen #(
+    .DataWidth(DataWidth)
+  ) baud_generator (
+    .clk_i(),
+    .rst_i(),
+    .tick_i(),
+    .rx_data_i(),
+    .rx_dv_o(),
+    .data_o()
+);
 
 endmodule
