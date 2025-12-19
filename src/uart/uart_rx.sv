@@ -10,6 +10,8 @@ module uart_rx #(
   output logic [DataWidth-1:0] data_o
 );
 
+  //TODO Add busy_o 
+
   // rx data lines
   logic rx_data_r;
   logic rxd;

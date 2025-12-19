@@ -1,5 +1,7 @@
 module uart_ctrl #(
-  parameter int unsigned DataWidth = 8
+  parameter int unsigned DataWidth = 8,
+  parameter int unsigned ClockFrequency = 50_000_000,
+  parameter int unsigned OverSampleRate = 16
 ) (
   input  logic        clk_i,
   input  logic        rst_i,
@@ -11,23 +13,31 @@ module uart_ctrl #(
 );
 
 
-  uart_rx uart_reciever (
-
-  );
+  uart_rx #(
+    .DataWidth(DataWidth)
+  ) uart_reciever (
+    .clk_i(clk_i),
+    .rst_i(rst_i),
+    .tick_i(),
+    .rx_data_i(),
+    .rx_dv_o(),
+    .data_o()
+);
 
   uart_tx uart_transmitter (
 
   );
 
   baud_gen #(
-    .DataWidth(DataWidth)
+    .ClockFrequency(ClockFrequency),
+    .OverSampleRate(OverSampleRate)
   ) baud_generator (
-    .clk_i(),
-    .rst_i(),
-    .tick_i(),
-    .rx_data_i(),
-    .rx_dv_o(),
-    .data_o()
+    .clk_i(clk_i),
+    .rst_i(rst_i),
+    .rx_busy_i(),
+    .tx_busy_i(),
+    .baud_sel_i(),
+    .baudx16_tick_o()
 );
 
 endmodule
