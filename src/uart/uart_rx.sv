@@ -34,16 +34,19 @@ module uart_rx #(
   uart_state_e state_reg;
   uart_state_e next_state;
 
+  // Shift buffer registers
+  logic [DataWidth-1:0] sbuff_reg;
+  logic [DataWidth-1:0] next_sbuff;
+
   // Count registers
   logic [CountWidth-1:0] count_reg;
   logic [CountWidth-1:0] next_count;
 
-  // Indicates 
-  logic sbuff_full;
+  // Indicates when shift buffer is full
+  logic  sbuff_full;
+  assign sbuff_full = (count_reg == CountWidth'(DataWidth-1));
 
-  // Shift buffer registers
-  logic [DataWidth-1:0] sbuff_reg;
-  logic [DataWidth-1:0] next_sbuff;
+  assign data_o  = sbuff_reg;
 
   always_ff @(posedge clk_i or posedge rst_i) begin : memory_block
     if (rst_i) begin
@@ -56,9 +59,6 @@ module uart_rx #(
       sbuff_reg <= next_sbuff;
     end
   end
-
-  assign sbuff_full = (count_reg == CountWidth'(DataWidth-1));
-  assign data_o  = sbuff_reg;
 
   always_comb begin : next_state_logic
     next_state = state_reg;
