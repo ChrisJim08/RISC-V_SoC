@@ -1,6 +1,10 @@
-`include "baud_gen.svh"
 module baudx16_gen #(
-  parameter int unsigned ClockFrequency = 50_000_000
+  parameter  int unsigned ClockFrequency   = 50_000_000,
+  localparam int unsigned Baud1900Divsor   = ClockFrequency / 1900,
+  localparam int unsigned Baud19200Divsor  = ClockFrequency / 19200,
+  localparam int unsigned Baud57600Divsor  = ClockFrequency / 57600,
+  localparam int unsigned Baud115200Divsor = ClockFrequency / 115200,
+  localparam int unsigned MinDivsorWidth   = $clog2(Baud1900Divsor)
 ) (
   input  logic       clk_i,
   input  logic       rst_i,
@@ -8,32 +12,33 @@ module baudx16_gen #(
   output logic       baudx16_tick_o
 );
 
-  int unsigned baud; // Make width of Clockfreq?
-  int unsigned divsor; 
-  //logic [$clog2(ClockFrequency)-1:0)] cur_count
-  int unsigned cur_count; //make width of $clog(divsor)
-  //int unsigned next_count;
+  logic [MinDivsorWidth-1:0] divsor;
+  logic [MinDivsorWidth-1:0] count_reg;
+  logic [MinDivsorWidth-1:0] next_count;
 
-always_comb begin
-  unique case (baud_sel_i)
-    2'b00: baud = BAUD_1900_RATE;
-    2'b01: baud = BAUD_19200_RATE;
-    2'b10: baud = BAUD_57600_RATE;
-    2'b11: baud = BAUD_115200_RATE;
-  endcase
-  divsor = ClockFrequency / baud;
-end
+  always_comb begin
+    // TODO if (!tx_busy || !rx_busy)
+    // make divsor_reg and divsor_next which makes it possible to change after byte
+    unique case (baud_sel_i)
+      2'b00: divsor = MinDivsorWidth'(Baud1900Divsor);
+      2'b01: divsor = MinDivsorWidth'(Baud19200Divsor);
+      2'b10: divsor = MinDivsorWidth'(Baud57600Divsor);
+      2'b11: divsor = MinDivsorWidth'(Baud115200Divsor);
+    endcase
 
+    baudx16_tick_o = 1'b0;
 
-always_ff @(posedge clk_i) begin
-  if (rst_i ||  (cur_count == (divsor-1))) begin
-    cur_count <= '0;
-  end else begin
-    cur_count <= cur_count + 1;
+    if (count_reg == (divsor-1)) begin
+      baudx16_tick_o = 1'b1;
+      next_count     = '0;
+    end else next_count = count_reg + 1;
   end
-end
 
-assign baudx16_tick_o = (cur_count == divsor);
-
-
+  always_ff @(posedge clk_i) begin
+    if (rst_i) begin
+      count_reg <= '0;
+    end else begin
+      count_reg <= next_count;
+    end
+  end
 endmodule 
