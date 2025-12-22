@@ -5,8 +5,8 @@ module uart_rx #(
   input  logic                 clk_i,
   input  logic                 rst_i,
   input  logic                 tick_i,
-  input  logic                 rx_data_i,
-  output logic                 rx_dv_o,
+  input  logic                 data_i,
+  output logic                 dv_o,
   output logic [DataWidth-1:0] data_o
 );
 
@@ -22,7 +22,7 @@ module uart_rx #(
       rx_data_r <= 1;
       rxd       <= 1;
     end else begin
-      rx_data_r <= rx_data_i;
+      rx_data_r <= data_i;
       rxd       <= rx_data_r;
     end
   end
@@ -66,7 +66,7 @@ module uart_rx #(
     next_state = state_reg;
     next_count = count_reg;
     next_sbuff = sbuff_reg;
-    rx_dv_o    = 1'b0;
+    dv_o    = 1'b0;
 
     if (tick_i) begin
       unique case (state_reg)    
@@ -84,7 +84,7 @@ module uart_rx #(
         end
         StopBit: begin 
           next_state = Idle;
-          rx_dv_o    = 1'b1;
+          dv_o    = 1'b1;
         end
         default: ;
       endcase
