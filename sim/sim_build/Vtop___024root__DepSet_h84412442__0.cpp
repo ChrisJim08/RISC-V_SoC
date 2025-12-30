@@ -34,7 +34,10 @@ void Vtop___024root___eval_triggers__act(Vtop___024root* vlSelf) {
     // Body
     vlSelfRef.__VactTriggered.setBit(0U, ((IData)(vlSelfRef.clk_i) 
                                           & (~ (IData)(vlSelfRef.__Vtrigprevexpr___TOP__clk_i__0))));
+    vlSelfRef.__VactTriggered.setBit(1U, ((IData)(vlSelfRef.rst_i) 
+                                          & (~ (IData)(vlSelfRef.__Vtrigprevexpr___TOP__rst_i__0))));
     vlSelfRef.__Vtrigprevexpr___TOP__clk_i__0 = vlSelfRef.clk_i;
+    vlSelfRef.__Vtrigprevexpr___TOP__rst_i__0 = vlSelfRef.rst_i;
 #ifdef VL_DEBUG
     if (VL_UNLIKELY(vlSymsp->_vm_contextp__->debug())) {
         Vtop___024root___dump_triggers__act(vlSelf);

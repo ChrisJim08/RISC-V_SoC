@@ -11,6 +11,7 @@ VL_ATTR_COLD void Vtop___024root___eval_static(Vtop___024root* vlSelf) {
     auto& vlSelfRef = std::ref(*vlSelf).get();
     // Body
     vlSelfRef.__Vtrigprevexpr___TOP__clk_i__0 = vlSelfRef.clk_i;
+    vlSelfRef.__Vtrigprevexpr___TOP__rst_i__0 = vlSelfRef.rst_i;
 }
 
 VL_ATTR_COLD void Vtop___024root___eval_initial(Vtop___024root* vlSelf) {
@@ -46,7 +47,7 @@ VL_ATTR_COLD void Vtop___024root___eval_settle(Vtop___024root* vlSelf) {
 #ifdef VL_DEBUG
             Vtop___024root___dump_triggers__stl(vlSelf);
 #endif
-            VL_FATAL_MT("../src/uart/fifo.sv", 1, "", "Settle region did not converge.");
+            VL_FATAL_MT("/home/chris/projects/RISC-V_SoC/sim/../src/uart/uart_tx.sv", 1, "", "Settle region did not converge.");
         }
         __VstlIterCount = ((IData)(1U) + __VstlIterCount);
         __VstlContinue = 0U;
@@ -128,6 +129,9 @@ VL_ATTR_COLD void Vtop___024root___dump_triggers__act(Vtop___024root* vlSelf) {
     if ((1ULL & vlSelfRef.__VactTriggered.word(0U))) {
         VL_DBG_MSGF("         'act' region trigger index 0 is active: @(posedge clk_i)\n");
     }
+    if ((2ULL & vlSelfRef.__VactTriggered.word(0U))) {
+        VL_DBG_MSGF("         'act' region trigger index 1 is active: @(posedge rst_i)\n");
+    }
 }
 #endif  // VL_DEBUG
 
@@ -143,6 +147,9 @@ VL_ATTR_COLD void Vtop___024root___dump_triggers__nba(Vtop___024root* vlSelf) {
     if ((1ULL & vlSelfRef.__VnbaTriggered.word(0U))) {
         VL_DBG_MSGF("         'nba' region trigger index 0 is active: @(posedge clk_i)\n");
     }
+    if ((2ULL & vlSelfRef.__VnbaTriggered.word(0U))) {
+        VL_DBG_MSGF("         'nba' region trigger index 1 is active: @(posedge rst_i)\n");
+    }
 }
 #endif  // VL_DEBUG
 
@@ -153,26 +160,25 @@ VL_ATTR_COLD void Vtop___024root___ctor_var_reset(Vtop___024root* vlSelf) {
     // Body
     vlSelf->clk_i = VL_RAND_RESET_I(1);
     vlSelf->rst_i = VL_RAND_RESET_I(1);
-    vlSelf->wr_en_i = VL_RAND_RESET_I(1);
-    vlSelf->rd_en_i = VL_RAND_RESET_I(1);
-    vlSelf->wr_data_i = VL_RAND_RESET_I(32);
-    vlSelf->full_o = VL_RAND_RESET_I(1);
-    vlSelf->empty_o = VL_RAND_RESET_I(1);
-    vlSelf->rd_data_o = VL_RAND_RESET_I(32);
-    vlSelf->fifo__DOT__clk_i = VL_RAND_RESET_I(1);
-    vlSelf->fifo__DOT__rst_i = VL_RAND_RESET_I(1);
-    vlSelf->fifo__DOT__wr_en_i = VL_RAND_RESET_I(1);
-    vlSelf->fifo__DOT__rd_en_i = VL_RAND_RESET_I(1);
-    vlSelf->fifo__DOT__wr_data_i = VL_RAND_RESET_I(32);
-    vlSelf->fifo__DOT__full_o = VL_RAND_RESET_I(1);
-    vlSelf->fifo__DOT__empty_o = VL_RAND_RESET_I(1);
-    vlSelf->fifo__DOT__rd_data_o = VL_RAND_RESET_I(32);
-    vlSelf->fifo__DOT__rd_ptr = VL_RAND_RESET_I(5);
-    vlSelf->fifo__DOT__wr_ptr = VL_RAND_RESET_I(5);
-    for (int __Vi0 = 0; __Vi0 < 16; ++__Vi0) {
-        vlSelf->fifo__DOT__mem[__Vi0] = VL_RAND_RESET_I(32);
-    }
-    vlSelf->fifo__DOT__rd_valid = VL_RAND_RESET_I(1);
-    vlSelf->fifo__DOT__wr_valid = VL_RAND_RESET_I(1);
+    vlSelf->tick_i = VL_RAND_RESET_I(1);
+    vlSelf->dv_i = VL_RAND_RESET_I(1);
+    vlSelf->data_i = VL_RAND_RESET_I(8);
+    vlSelf->txd_o = VL_RAND_RESET_I(1);
+    vlSelf->busy_o = VL_RAND_RESET_I(1);
+    vlSelf->uart_tx__DOT__clk_i = VL_RAND_RESET_I(1);
+    vlSelf->uart_tx__DOT__rst_i = VL_RAND_RESET_I(1);
+    vlSelf->uart_tx__DOT__tick_i = VL_RAND_RESET_I(1);
+    vlSelf->uart_tx__DOT__dv_i = VL_RAND_RESET_I(1);
+    vlSelf->uart_tx__DOT__data_i = VL_RAND_RESET_I(8);
+    vlSelf->uart_tx__DOT__txd_o = VL_RAND_RESET_I(1);
+    vlSelf->uart_tx__DOT__busy_o = VL_RAND_RESET_I(1);
+    vlSelf->uart_tx__DOT__state_reg = 0;
+    vlSelf->uart_tx__DOT__next_state = 0;
+    vlSelf->uart_tx__DOT__sbuff_reg = VL_RAND_RESET_I(8);
+    vlSelf->uart_tx__DOT__next_sbuff = VL_RAND_RESET_I(8);
+    vlSelf->uart_tx__DOT__count_reg = VL_RAND_RESET_I(3);
+    vlSelf->uart_tx__DOT__next_count = VL_RAND_RESET_I(3);
+    vlSelf->uart_tx__DOT__sbuff_empty = VL_RAND_RESET_I(1);
     vlSelf->__Vtrigprevexpr___TOP__clk_i__0 = VL_RAND_RESET_I(1);
+    vlSelf->__Vtrigprevexpr___TOP__rst_i__0 = VL_RAND_RESET_I(1);
 }

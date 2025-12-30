@@ -5,25 +5,23 @@ module uart_rx #(
   input  logic                 clk_i,
   input  logic                 rst_i,
   input  logic                 tick_i,
-  input  logic                 data_i,
+  input  logic                 rxd_i,
   output logic                 dv_o,
   output logic [DataWidth-1:0] data_o
 );
 
-  //TODO Add busy_o 
-
   // rx data lines
-  logic rx_data_r;
+  logic rxd_r;
   logic rxd;
 
   // Double register to reduce metastability
   always_ff @(posedge clk_i or posedge rst_i) begin
     if (rst_i) begin
-      rx_data_r <= 1;
-      rxd       <= 1;
+      rxd_r <= 1;
+      rxd   <= 1;
     end else begin
-      rx_data_r <= data_i;
-      rxd       <= rx_data_r;
+      rxd_r <= rxd_i;
+      rxd   <= rxd_r;
     end
   end
 
@@ -66,6 +64,7 @@ module uart_rx #(
     next_state = state_reg;
     next_count = count_reg;
     next_sbuff = sbuff_reg;
+    
     dv_o    = 1'b0;
 
     if (tick_i) begin
@@ -74,12 +73,13 @@ module uart_rx #(
           next_state = StartBit;
         end
         StartBit: begin
-          next_count = 0'b0;
+          next_sbuff = {rxd, sbuff_reg[DataWidth-1:1]};
+          next_count = count_reg + 1;
           next_state = DataBits;
         end
         DataBits: begin
           next_sbuff = {rxd, sbuff_reg[DataWidth-1:1]};
-          next_count = count_reg + '1;
+          next_count = count_reg + 1;
           if (sbuff_full) next_state = StopBit;
         end
         StopBit: begin 
