@@ -5,8 +5,8 @@ module fifo #(
 ) (
   input logic                  clk_i,
   input logic                  rst_i,
-  input logic                  wr_en_i,
   input logic                  rd_en_i,
+  input logic                  wr_en_i,
   input logic [DataWidth-1:0]  wr_data_i,
   output logic                 full_o,
   output logic                 empty_o,

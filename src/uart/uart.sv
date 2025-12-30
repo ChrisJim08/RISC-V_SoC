@@ -6,17 +6,24 @@ module uart_ctrl #(
 ) (
   input  logic        clk_i,
   input  logic        rst_i,
-
-  input  logic        wr_en_i,
+  input  logic        rxd_i,
+  input  logic        dv_i,
   input  logic [1:0]  addr_i,
   input  logic [15:0] data_i,
-  input  logic        rxd_i,
   output logic        txd_o
 );
 
+  // Memory logic (ex. registers, data in, ...)
   logic tick_s;
   
-  logic rx_busy_s, tx_busy_s;
+  logic rx_busy_s, rx_busy_r, tx_busy_s;
+
+  always_ff @(posedge clk_i or posedge rst_i) begin
+    if (rst_i)
+      rx_busy_s <= 1'b0;
+    else
+      rx_busy_s <= rx_busy_r;
+  end
 
   baud_gen #(
     .ClockFrequency(ClockFrequency),
@@ -30,6 +37,9 @@ module uart_ctrl #(
     .baud_tick_o(tick_s)
   );
 
+  logic rx_fifo_wr_en;
+  logic [DataWidth-1:0] rx_data;
+
   uart_rx #(
     .DataWidth(DataWidth)
   ) uart_reciever (
@@ -37,9 +47,9 @@ module uart_ctrl #(
     .rst_i(rst_i),
     .tick_i(tick_s),
     .rxd_i(rxd_i),
-    .dv_o(),
-    .busy_o(rx_busy_s),
-    .data_o()
+    .dv_o(rx_fifo_wr_en),
+    .busy_o(rx_busy_r),
+    .data_o(rx_data)
   );
 
   fifo #(
@@ -48,25 +58,16 @@ module uart_ctrl #(
   ) recieve_fifo (
     .clk_i(clk_i),
     .rst_i(rst_i),
-    .wr_en_i(),
     .rd_en_i(),
-    .wr_data_i(),
+    .wr_en_i(rx_fifo_wr_en),
+    .wr_data_i(rx_data),
     .full_o(),
     .empty_o(),
     .rd_data_o()
   );
 
-  uart_tx #(
-    .DataWidth(DataWidth)
-  ) uart_transmitter (
-    .clk_i(clk_i),
-    .rst_i(rst_i),
-    .tick_i(tick_s),
-    .dv_i(),
-    .data_i(),
-    .txd_o(txd_o), 
-    .busy_o(tx_busy_s)
-  );
+  logic tx_fifo_empty;
+  logic [DataWidth-1:0] tx_data;
 
   fifo #(
     .DataWidth(DataWidth),
@@ -78,8 +79,22 @@ module uart_ctrl #(
     .rd_en_i(),
     .wr_data_i(),
     .full_o(),
-    .empty_o(),
-    .rd_data_o()
+    .empty_o(tx_fifo_empty),
+    .rd_data_o(tx_data)
+  );
+
+  logic tx_dv;
+  assign tx_dv = ~tx_fifo_empty;
+  uart_tx #(
+    .DataWidth(DataWidth)
+  ) uart_transmitter (
+    .clk_i(clk_i),
+    .rst_i(rst_i),
+    .tick_i(tick_s),
+    .dv_i(tx_fifo_empty),
+    .data_i(tx_data),
+    .txd_o(txd_o), 
+    .busy_o(tx_busy_s)
   );
 
 

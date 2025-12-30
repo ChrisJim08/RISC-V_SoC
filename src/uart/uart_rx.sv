@@ -18,8 +18,8 @@ module uart_rx #(
   // Double register to reduce metastability
   always_ff @(posedge clk_i or posedge rst_i) begin
     if (rst_i) begin
-      rxd_r <= 1;
-      rxd   <= 1;
+      rxd_r <= 1'b1;
+      rxd   <= 1'b1;
     end else begin
       rxd_r <= rxd_i;
       rxd   <= rxd_r;
