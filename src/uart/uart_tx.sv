@@ -28,9 +28,6 @@ module uart_tx #(
   logic [CountWidth-1:0] count_reg;
   logic [CountWidth-1:0] next_count;
 
-  // Indicates when shift buffer is full
-  logic  sbuff_empty;
-  assign sbuff_empty = (count_reg == CountWidth'(DataWidth-1));
 
   always_ff @(posedge clk_i or posedge rst_i) begin : memory_block
     if (rst_i) begin
@@ -44,6 +41,10 @@ module uart_tx #(
     end
   end
 
+  // Indicates when shift buffer is full
+  logic  sbuff_empty;
+  assign sbuff_empty = (count_reg == CountWidth'(DataWidth-1));
+  
   always_comb begin : next_state_logic
     next_state = state_reg;
     next_count = count_reg;
