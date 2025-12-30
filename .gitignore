@@ -2,5 +2,5 @@
 __pycache__/
 *.log
 .vscode/
-sim/
-test_fifo.py
+sim/sim_build/
+sim/results.xml
