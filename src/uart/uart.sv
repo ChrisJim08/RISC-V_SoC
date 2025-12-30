@@ -1,5 +1,6 @@
 module uart_ctrl #(
-  parameter int unsigned DataWidth      = 8,
+  parameter int unsigned UartDataWidth  = 8,
+  parameter int unsigned MmioDataWidth  = 32,
   parameter int unsigned FifoDepth      = 16,
   parameter int unsigned ClockFrequency = 50_000_000,
   parameter int unsigned OverSampleRate = 16
@@ -7,14 +8,12 @@ module uart_ctrl #(
   input  logic        clk_i,
   input  logic        rst_i,
   input  logic        rxd_i,
-  input  logic        dv_i,
-  input  logic [1:0]  addr_i,
-  input  logic [15:0] data_i,
-  output logic        txd_o
+  input  logic                     mmio_wr_en_i,
+  input  logic [MmioDataWidth-1:0] mmio_addr_i,
+  input  logic [MmioDataWidth-1:0] mmio_wdata_i,
+  output logic                     txd_o,
+  output logic [MmioDataWidth-1:0] mmio_rdata_o
 );
-
-  // Memory logic (ex. registers, data in, ...)
-  logic tick_s;
   
   logic rx_busy_s, rx_busy_r, tx_busy_s;
 
@@ -24,6 +23,34 @@ module uart_ctrl #(
     else
       rx_busy_s <= rx_busy_r;
   end
+
+  logic [BusDataWidth-1:0] status_reg;
+  logic [DataWidth-1:0] baud_reg;
+
+  always_comb begin
+    data_o = '0;
+    unique case (addr_i)
+      2'b00: begin : line_status_register
+        mmio_rdata_o = status_reg;
+      end
+      2'b01: begin : baud_rate_register
+        if (dv_i) begin
+          baud_reg = 
+        end else begin
+          
+        end
+      end
+      2'b10: begin
+        data_o = '0;
+      end
+      2'b11: begin
+        data_o = '0;
+      end
+      default: ;
+    endcase
+  end
+
+  logic tick_s;
 
   baud_gen #(
     .ClockFrequency(ClockFrequency),
