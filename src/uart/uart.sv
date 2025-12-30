@@ -38,6 +38,7 @@ module uart_ctrl #(
     .tick_i(tick_s),
     .rxd_i(rxd_i),
     .dv_o(),
+    .busy_o(rx_busy_s),
     .data_o()
   );
 

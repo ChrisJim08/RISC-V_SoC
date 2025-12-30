@@ -44,30 +44,29 @@ module uart_tx #(
   // Indicates when shift buffer is full
   logic  sbuff_empty;
   assign sbuff_empty = (count_reg == CountWidth'(DataWidth-1));
-  
+
   always_comb begin : next_state_logic
     next_state = state_reg;
     next_count = count_reg;
     next_sbuff = sbuff_reg;
     
     txd_o     = 1'b1;
-    busy_o    = 1'b0;
+    busy_o    = 1'b1;
 
     unique case (state_reg)    
-      Idle: if (dv_i) begin
-        busy_o    = 1'b1;
-        next_sbuff = data_i;
-        next_state = StartBit;
+      Idle: begin
+        if (dv_i) begin
+          next_sbuff = data_i;
+          next_state = StartBit;
+        end else busy_o = 1'b0;
       end
       StartBit: begin
-        busy_o    = 1'b1;
         if (tick_i) begin
           txd_o      = 1'b1;
           next_state = DataBits;
         end
       end
       DataBits: begin
-        busy_o    = 1'b1;
         if (tick_i) begin
           txd_o      = sbuff_reg[0];
           next_sbuff = sbuff_reg >> 1;
@@ -76,7 +75,6 @@ module uart_tx #(
         end
       end
       StopBit: begin 
-        busy_o    = 1'b1;
         if (tick_i) begin
           txd_o    = 1'b0;
           next_state = Idle;

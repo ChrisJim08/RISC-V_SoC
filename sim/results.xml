@@ -1,7 +1,7 @@
 <testsuites name="results">
   <testsuite name="all" package="all">
-    <property name="random_seed" value="1767090851" />
-    <testcase name="test_uart_tx" classname="tests.test_uart_tx" file="/home/chris/projects/RISC-V_SoC/tests/test_uart_tx.py" lineno="74" time="0.31849169731140137" sim_time_ns="209140.0" ratio_time="656657.6201687164">
+    <property name="random_seed" value="1767092736" />
+    <testcase name="test_uart_tx" classname="tests.test_uart_tx" file="/home/chris/projects/RISC-V_SoC/tests/test_uart_tx.py" lineno="74" time="0.3058505058288574" sim_time_ns="209140.0" ratio_time="683798.1171004731">
       <failure error_type="AttributeError" error_msg="uart_tx contains no child object named data_o" />
     </testcase>
   </testsuite>

@@ -7,6 +7,7 @@ module uart_rx #(
   input  logic                 tick_i,
   input  logic                 rxd_i,
   output logic                 dv_o,
+  output logic                 busy_o,
   output logic [DataWidth-1:0] data_o
 );
 
@@ -66,11 +67,14 @@ module uart_rx #(
     next_sbuff = sbuff_reg;
     
     dv_o    = 1'b0;
+    busy_o  = 1'b1;
 
     if (tick_i) begin
       unique case (state_reg)    
-        Idle: if (!rxd) begin
-          next_state = StartBit;
+        Idle: begin
+          if (!rxd) begin
+            next_state = StartBit;
+          end else busy_o = 1'b0;
         end
         StartBit: begin
           next_sbuff = {rxd, sbuff_reg[DataWidth-1:1]};
