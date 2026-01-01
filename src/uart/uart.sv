@@ -37,7 +37,7 @@ module uart_ctrl #(
   //Write-only Transmitter data Register
   logic [BusDataWidth-1:0] tx_data_reg;
 
-  always_comb begin
+  always_comb begin //TODO: Correctly implement register logic, using q and d signals
     bus_rdata_o = '0;
     unique case (bus_addr_i[1:0])
       2'b00: begin : baud_rate_register
@@ -60,7 +60,7 @@ module uart_ctrl #(
     endcase
   end
 
-  logic baud_clk_s;
+  logic baud_clk_s; //TODO: Correct circular combinational logic (after TOD0 above)
 
   baud_gen #(
     .ClockFrequency(ClockFrequency),
@@ -75,7 +75,7 @@ module uart_ctrl #(
   );
 
   logic rx_valid;
-  logic [UartDataWidth-1:0] rx_data;
+  logic [UartDataWidth-1:0] rx_data_s;
 
   uart_rx #(
     .DataWidth(UartDataWidth)
@@ -86,7 +86,7 @@ module uart_ctrl #(
     .rxd_i(rxd_i),
     .dv_o(rx_valid),
     .busy_o(rx_busy_r),
-    .data_o(rx_data)
+    .data_o(rx_data_s)
   );
 
   fifo #(
@@ -97,10 +97,10 @@ module uart_ctrl #(
     .rst_i(rst_i),
     .rd_en_i(),
     .wr_en_i(rx_valid),
-    .wr_data_i(rx_data),
+    .wr_data_i(rx_data_s),
     .full_o(),
     .empty_o(),
-    .rd_data_o()
+    .rd_data_o(rx_data_reg[7:0]) // Need to clock register?
   );
 
   logic tx_fifo_empty;
