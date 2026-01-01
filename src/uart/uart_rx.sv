@@ -4,7 +4,7 @@ module uart_rx #(
   ) (
   input  logic                 clk_i,
   input  logic                 rst_i,
-  input  logic                 tick_i,
+  input  logic                 baud_clk_i,
   input  logic                 rxd_i,
   output logic                 dv_o,
   output logic                 busy_o,
@@ -69,7 +69,7 @@ module uart_rx #(
     dv_o    = 1'b0;
     busy_o  = 1'b1;
 
-    if (tick_i) begin
+    if (baud_clk_i) begin
       unique case (state_reg)    
         Idle: begin
           if (!rxd) begin

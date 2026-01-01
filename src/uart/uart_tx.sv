@@ -4,7 +4,7 @@ module uart_tx #(
   ) (
   input  logic                 clk_i,
   input  logic                 rst_i,
-  input  logic                 tick_i,
+  input  logic                 baud_clk_i,
   input  logic                 dv_i,
   input  logic [DataWidth-1:0] data_i,
   output logic                 txd_o,
@@ -61,13 +61,13 @@ module uart_tx #(
         end else busy_o = 1'b0;
       end
       StartBit: begin
-        if (tick_i) begin
+        if (baud_clk_i) begin
           txd_o      = 1'b1;
           next_state = DataBits;
         end
       end
       DataBits: begin
-        if (tick_i) begin
+        if (baud_clk_i) begin
           txd_o      = sbuff_reg[0];
           next_sbuff = sbuff_reg >> 1;
           next_count = count_reg + 1;
@@ -75,7 +75,7 @@ module uart_tx #(
         end
       end
       StopBit: begin 
-        if (tick_i) begin
+        if (baud_clk_i) begin
           txd_o    = 1'b0;
           next_state = Idle;
         end

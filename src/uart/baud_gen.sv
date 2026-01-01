@@ -13,7 +13,7 @@ module baud_gen #(
   input  logic       rx_busy_i,
   input  logic       tx_busy_i,
   input  logic [1:0] baud_sel_i,
-  output logic       baud_tick_o
+  output logic       baud_clk_o
 );
 
   logic  busy;
@@ -33,13 +33,13 @@ module baud_gen #(
         2'b11: next_divsor = MinDivsorWidth'(Baud115200Divsor);
     endcase
 
-    baud_tick_o = 1'b0;
+    baud_clk_o = 1'b0;
 
     if ((next_divsor != divsor_reg) && !busy) begin
       next_count     = '0;
     end else if (count_reg == (divsor_reg-1)) begin
       next_count     = '0;
-      baud_tick_o = 1'b1;
+      baud_clk_o = 1'b1;
     end else next_count = count_reg + 1;
   end
 
