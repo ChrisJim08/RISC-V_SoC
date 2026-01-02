@@ -28,7 +28,7 @@ module fifo #(
   assign empty_o = (rd_ptr == wr_ptr);
   assign full_o  = (rd_ptr == {~wr_ptr[PointerWidth], wr_ptr[PointerWidth-1:0]});
 
-  always_ff @(posedge clk_i) begin
+  always_ff @(posedge clk_i or posedge rst_i) begin
     if(rst_i) begin
       rd_ptr    <= '0;
       wr_ptr    <= '0;

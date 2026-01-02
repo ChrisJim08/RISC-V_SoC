@@ -6,7 +6,7 @@ module uart_rx #(
   input  logic                 rst_i,
   input  logic                 baud_clk_i,
   input  logic                 rxd_i,
-  output logic                 dv_o,
+  output logic                 valid_o,
   output logic                 busy_o,
   output logic [DataWidth-1:0] data_o
 );
@@ -66,7 +66,7 @@ module uart_rx #(
     next_count = count_reg;
     next_sbuff = sbuff_reg;
     
-    dv_o    = 1'b0;
+    valid_o = 1'b0;
     busy_o  = 1'b1;
 
     if (baud_clk_i) begin
@@ -88,7 +88,7 @@ module uart_rx #(
         end
         StopBit: begin 
           next_state = Idle;
-          dv_o    = 1'b1;
+          valid_o    = 1'b1;
         end
         default: ;
       endcase
