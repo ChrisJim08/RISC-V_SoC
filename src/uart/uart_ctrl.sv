@@ -14,7 +14,7 @@ module uart_ctrl #(
   output logic                    txd_o,
   output logic [BusDataWidth-1:0] bus_rdata_o
 );
-  // TODO Fix rx.busy_o signal
+  // TODO Fix rx.busy_o signal?
   // Fix fifo rd and wr pointers to have d /q?
 
   // Internal signals
@@ -52,7 +52,7 @@ module uart_ctrl #(
   assign status_reg = {tx_busy,rx_busy,rx_valid};
 
   // Read-only Reciever data Register (fifo rd_o)
-  logic [UartDataWidth-1:0] rx_fifo_rdata;                  // Better name?
+  logic [UartDataWidth-1:0] rx_fifo_rdata; 
 
   // Write-only Transmitter data Register
   logic [UartDataWidth-1:0] tx_wdata_d;
@@ -111,7 +111,7 @@ module uart_ctrl #(
     .baud_clk_o(baud_clk)
   );
 
-  uart_rx #(
+  uart_rx #(                          // add fifo_busy signal to stop rx from recieving bits?
     .DataWidth(UartDataWidth)
   ) uart_reciever (
     .clk_i(clk_i),
@@ -157,7 +157,7 @@ module uart_ctrl #(
     .clk_i(clk_i),
     .rst_i(rst_i),
     .baud_clk_i(baud_clk),
-    .dv_i(tx_valid),
+    .valid_i(tx_valid),
     .data_i(tx_fifo_rdata),
     .txd_o(txd_o), 
     .busy_o(tx_busy)

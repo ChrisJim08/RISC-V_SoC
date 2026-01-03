@@ -26,6 +26,6 @@ test_uart_tx:
 	$(MAKE) COCOTB_TOPLEVEL=uart_tx COCOTB_TEST_MODULES=tests.test_uart_tx
 
 test_uart:
-	$(MAKE) COCOTB_TOPLEVEL=uart COCOTB_TEST_MODULES=tests.test_uart
+	$(MAKE) COCOTB_TOPLEVEL=uart_ctrl COCOTB_TEST_MODULES=tests.test_uart
 
 

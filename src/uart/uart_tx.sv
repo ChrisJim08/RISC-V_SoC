@@ -5,7 +5,7 @@ module uart_tx #(
   input  logic                 clk_i,
   input  logic                 rst_i,
   input  logic                 baud_clk_i,
-  input  logic                 dv_i,
+  input  logic                 valid_i,
   input  logic [DataWidth-1:0] data_i,
   output logic                 txd_o,
   output logic                 busy_o
@@ -55,7 +55,7 @@ module uart_tx #(
 
     unique case (state_reg)    
       Idle: begin
-        if (dv_i) begin
+        if (valid_i) begin
           next_sbuff = data_i;
           next_state = StartBit;
         end else busy_o = 1'b0;

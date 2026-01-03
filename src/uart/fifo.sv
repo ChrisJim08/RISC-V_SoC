@@ -32,15 +32,15 @@ module fifo #(
     if(rst_i) begin
       rd_ptr    <= '0;
       wr_ptr    <= '0;
-      rd_data_o <= '0;
+      rdata_o <= '0;
     end 
     else begin
       if (rd_valid) begin
-        rd_data_o <= mem[rd_ptr[PointerWidth-1:0]];
+        rdata_o <= mem[rd_ptr[PointerWidth-1:0]];
         rd_ptr    <= rd_ptr + 1;
       end
       if (wr_valid) begin
-        mem[wr_ptr[PointerWidth-1:0]] <= wr_data_i;
+        mem[wr_ptr[PointerWidth-1:0]] <= wdata_i;
         wr_ptr                        <= wr_ptr + 1;
       end 
     end

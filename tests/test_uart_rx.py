@@ -17,15 +17,15 @@ class UartDriver:
         """Sends a byte of data over the serial line."""
         
         # Start bit (logic low)
-        self.dut.data_i.value = 0
+        self.dut.rxd_i.value = 0
         await self.pulse_tick()
         cocotb.log.info(f"state_reg: 0x{self.dut.state_reg.value}")
 
         # Data bits (LSB first)
         for i in range(8): # Assuming 8 DataWidth
-            self.dut.data_i.value = (data >> i) & 1
+            self.dut.rxd_i.value = (data >> i) & 1
             await self.pulse_tick()
-            cocotb.log.info(f"Sending bit: 0x{self.dut.data_i.value}")
+            cocotb.log.info(f"Sending bit: 0x{self.dut.rxd_i.value}")
             cocotb.log.info(f"state_reg: 0x{self.dut.state_reg.value}")
             cocotb.log.info(f"rxd: 0x{self.dut.rxd.value}")
             cocotb.log.info(f"count_reg: 0x{self.dut.count_reg.value}")
@@ -33,24 +33,24 @@ class UartDriver:
             cocotb.log.info(f"next_sbuff: 0x{self.dut.next_sbuff.value}")
 
         # Stop bit (logic high)
-        self.dut.data_i.value = 1
+        self.dut.rxd_i.value = 1
         await self.pulse_tick()
         
-        cocotb.log.info(f"dv_o: 0x{self.dut.dv_o.value}")
+        cocotb.log.info(f"valid_o: 0x{self.dut.valid_o.value}")
         
-        # Return data_i to idle high state
+        # Return rxd_i to idle high state
         await self.pulse_tick()
 
     async def pulse_tick(self):
-        """Generates a single pulse on tick_i that lasts for one clock cycle at the correct time."""
+        """Generates a single pulse on baud_clk_i that lasts for one clock cycle at the correct time."""
         
         # Wait for the correct baud rate interval
         await ClockCycles(self.dut.clk_i, self.baud_rate_ticks)
         
         # Pulse the tick line for exactly one clock cycle
-        self.dut.tick_i.value = 1
-        await ClockCycles(self.dut.clk_i, 1) # Wait one clock cycle with tick_i high
-        self.dut.tick_i.value = 0
+        self.dut.baud_clk_i.value = 1
+        await ClockCycles(self.dut.clk_i, 1) # Wait one clock cycle with baud_clk_i high
+        self.dut.baud_clk_i.value = 0
         
         # The next call will handle the next baud interval delay
   
@@ -69,8 +69,8 @@ async def test_uart_rx(dut):
     
     # Initialize signals to 0 safely before the first clock
     dut.rst_i.value  = 0
-    dut.data_i.value = 1
-    dut.tick_i.value = 0
+    dut.rxd_i.value = 1
+    dut.baud_clk_i.value = 0
     
     BAUD_TICKS = 57600
     uart_driver = UartDriver(dut, BAUD_TICKS)
@@ -84,8 +84,8 @@ async def test_uart_rx(dut):
     cocotb.log.info(f"Sending byte: 0x{test_byte:02X}")
     await uart_driver.send_byte(test_byte)
 
-    # Wait for the DUT to indicate valid data output (dv_o goes high)
-    #await RisingEdge(dut.dv_o)
+    # Wait for the DUT to indicate valid data output (valid_o goes high)
+    #await RisingEdge(dut.valid_o)
     
     # Read the data output
     received_data = dut.data_o.value.to_unsigned()
