@@ -7,10 +7,10 @@ module fifo #(
   input logic                  rst_i,
   input logic                  rd_en_i,
   input logic                  wr_en_i,
-  input logic [DataWidth-1:0]  wr_data_i,
+  input logic [DataWidth-1:0]  wdata_i,
   output logic                 full_o,
   output logic                 empty_o,
-  output logic [DataWidth-1:0] rd_data_o
+  output logic [DataWidth-1:0] rdata_o
 );
 
   // Pointers with wrap-around bit (MSB) for status 

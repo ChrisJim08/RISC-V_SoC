@@ -14,12 +14,9 @@ module uart_ctrl #(
   output logic                    txd_o,
   output logic [BusDataWidth-1:0] bus_rdata_o
 );
-  // TODO Fix rx.busy_o signal and finish status register
-  // Make sure size'(data) does not make synthesis optimization wacky (doesn't optimize the extra bits away)
-  // Does rd_data make sense (rd_data = read-data_data)????
-  // Should reg sizes be UartDataWidth?
-  // Should bus inputs be UartDataWidth?
+  // TODO Fix rx.busy_o signal
   // Fix fifo rd and wr pointers to have d /q?
+
   // Internal signals
   logic baud_clk;
   logic rx_valid;
@@ -34,9 +31,7 @@ module uart_ctrl #(
   assign tx_fifo_rd_en = ~tx_busy;
   logic tx_fifo_full;
   logic tx_fifo_empty;
-  logic [UartDataWidth-1:0] tx_fifo_rd_data;
-
-  // Signal part-selecting
+  logic [UartDataWidth-1:0] tx_fifo_rdata;
   
   // TODO EXPLAIN THIS
   logic rx_busy, rx_busy_r, tx_busy;
@@ -57,20 +52,20 @@ module uart_ctrl #(
   assign status_reg = {tx_busy,rx_busy,rx_valid};
 
   // Read-only Reciever data Register (fifo rd_o)
-  logic [UartDataWidth-1:0] rx_fifo_rd_data;              // Better name?
+  logic [UartDataWidth-1:0] rx_fifo_rdata;                  // Better name?
 
   // Write-only Transmitter data Register
-  logic [UartDataWidth-1:0] tx_data_d;
-  logic [UartDataWidth-1:0] tx_data_q;
+  logic [UartDataWidth-1:0] tx_wdata_d;
+  logic [UartDataWidth-1:0] tx_wdata_q;
   
   // Register block
   always_ff @(posedge clk_i or posedge rst_i) begin
     if (rst_i) begin
       baud_rate_q <= 2'b00;
-      tx_data_q   <= '0;
+      tx_wdata_q   <= '0;
     end else begin
       baud_rate_q <= baud_rate_d;
-      tx_data_q   <= tx_data_d;
+      tx_wdata_q   <= tx_wdata_d;
     end
   end
 
@@ -78,7 +73,7 @@ module uart_ctrl #(
     rx_fifo_rd_en = 1'b0;
     tx_fifo_wr_en = 1'b0;
     baud_rate_d = baud_rate_q;
-    tx_data_d   = tx_data_q;
+    tx_wdata_d   = tx_wdata_q;
     bus_rdata_o = '0;
 
     unique case (bus_addr_i[1:0])
@@ -92,12 +87,12 @@ module uart_ctrl #(
       2'b01: bus_rdata_o = BusDataWidth'(status_reg);
       2'b10: begin
         rx_fifo_rd_en  = 1'b1;
-        bus_rdata_o      = BusDataWidth'(rx_fifo_rd_data);           
+        bus_rdata_o      = BusDataWidth'(rx_fifo_rdata);           
       end
       2'b11: begin 
         if (bus_wr_en_i) begin
           tx_fifo_wr_en = 1'b1; 
-          tx_data_d = bus_wdata_i[7:0]; 
+          tx_wdata_d = bus_wdata_i[7:0]; 
         end
       end
       default: ;
@@ -136,10 +131,10 @@ module uart_ctrl #(
     .rst_i(rst_i),
     .rd_en_i(rx_fifo_rd_en),
     .wr_en_i(rx_valid),
-    .wr_data_i(rx_data),
+    .wdata_i(rx_data),
     .full_o(rx_fifo_full),
     .empty_o(rx_fifo_empty),
-    .rd_data_o(rx_fifo_rd_data) 
+    .rdata_o(rx_fifo_rdata) 
   );
 
   fifo #(
@@ -148,12 +143,12 @@ module uart_ctrl #(
   ) transmit_fifo (
     .clk_i(clk_i),
     .rst_i(rst_i),
-    .wr_en_i(tx_fifo_wr_en),
-    .rd_en_i(tx_fifo_rd_en),                     
-    .wr_data_i(tx_data_q),
+    .rd_en_i(tx_fifo_rd_en), 
+    .wr_en_i(tx_fifo_wr_en),                    
+    .wdata_i(tx_wdata_q),
     .full_o(tx_fifo_full),
     .empty_o(tx_fifo_empty),
-    .rd_data_o(tx_fifo_rd_data)
+    .rdata_o(tx_fifo_rdata)
   );
 
   uart_tx #(
@@ -163,7 +158,7 @@ module uart_ctrl #(
     .rst_i(rst_i),
     .baud_clk_i(baud_clk),
     .dv_i(tx_valid),
-    .data_i(tx_fifo_rd_data),
+    .data_i(tx_fifo_rdata),
     .txd_o(txd_o), 
     .busy_o(tx_busy)
   );
