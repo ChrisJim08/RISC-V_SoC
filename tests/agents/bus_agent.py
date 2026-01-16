@@ -6,8 +6,7 @@ class BusAgent:
     self.monitor = BusMonitor(dut)
   
   async def write(self, addr, data):
-      self.driver.drive()
-    pass
+    self.driver.write(addr, data)
   
   async def sequencer_or_queue():
     pass

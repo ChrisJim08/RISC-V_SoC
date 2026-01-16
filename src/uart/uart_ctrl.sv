@@ -69,6 +69,7 @@ module uart_ctrl #(
     end
   end
 
+                                                    // TODO: Should bus_rdata = 0  when not in use? or the addr
   always_comb begin 
     rx_fifo_rd_en = 1'b0;
     tx_fifo_wr_en = 1'b0;
