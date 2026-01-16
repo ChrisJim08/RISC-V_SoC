@@ -30,8 +30,8 @@ module fifo #(
 
   always_ff @(posedge clk_i or posedge rst_i) begin
     if(rst_i) begin
-      rd_ptr    <= '0;
-      wr_ptr    <= '0;
+      rd_ptr  <= '0;
+      wr_ptr  <= '0;
       rdata_o <= '0;
     end 
     else begin

@@ -33,7 +33,7 @@ module uart_ctrl #(
   logic tx_fifo_empty;
   logic [UartDataWidth-1:0] tx_fifo_rdata;
   
-  // TODO EXPLAIN THIS
+  // TODO EXPLAIN THIS                                    // Still needed? (After fix)
   logic rx_busy, rx_busy_r, tx_busy;
   always_ff @(posedge clk_i or posedge rst_i) begin
     if (rst_i) begin
