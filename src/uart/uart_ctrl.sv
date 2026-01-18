@@ -112,7 +112,7 @@ module uart_ctrl #(
     .baud_clk_o(baud_clk)
   );
 
-  uart_rx #(                          // add fifo_busy signal to stop rx from recieving bits?
+  uart_rx #(                          //TODO: add fifo_busy signal to stop rx from recieving bits?
     .DataWidth(UartDataWidth)
   ) uart_reciever (
     .clk_i(clk_i),

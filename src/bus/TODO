@@ -1,0 +1,6 @@
+interface
+subordinate/manager muxs?
+  request-side mux/demux
+  response-side mux
+subordinate adapter
+asserations?

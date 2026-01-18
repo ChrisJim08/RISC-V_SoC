@@ -37,7 +37,7 @@ module fifo #(
     else begin
       if (rd_valid) begin
         rdata_o <= mem[rd_ptr[PointerWidth-1:0]];
-        rd_ptr    <= rd_ptr + 1;
+        rd_ptr  <= rd_ptr + 1;
       end
       if (wr_valid) begin
         mem[wr_ptr[PointerWidth-1:0]] <= wdata_i;
