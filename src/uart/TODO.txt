@@ -1,0 +1,14 @@
+Make Uart bus-agnostic
+  break uart ctrl into
+    uart_core.sv
+    uart_bus_regs.sv (uart_regs.sv)
+    uart_top.sv (uart.sv)
+Complete TODO complete 
+  Update fifo logic where when the fifo is full but a read is happening at the same time a write is allowed
+  if ((!full) || (read_enable))
+                write_address <= write_address + 1'b1;
+            else
+              overrun <=1'b1;
+          end
+  Add almost empty/full flags?
+  Add over/underrun flags?

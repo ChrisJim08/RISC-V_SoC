@@ -1,6 +1,0 @@
-Make Uart bus-agnostic
-  break uart ctrl into
-    uart_core.sv
-    uart_bus_regs.sv (uart_regs.sv)
-    uart_top.sv (uart.sv)
-Complete TODO complete 
