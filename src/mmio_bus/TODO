@@ -1,0 +1,10 @@
+interface
+subordinate/manager muxs?
+  request-side mux/demux
+  response-side mux
+subordinate adapter
+asserations?
+add a LSU to my core (Load/store unit)
+fix utilization of Datawidth in core
+is addr_decode.sv part of the bus or soc entirely?
+  same as LSU?
