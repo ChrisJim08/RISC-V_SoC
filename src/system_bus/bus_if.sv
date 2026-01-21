@@ -1,6 +1,6 @@
-//  Interface: mmio_bus_if
+//  Interface: bus_if
 //
-interface mmio_bus_if #(
+interface bus_if #(
   parameter int unsigned DataWidth = 32
 )(
   input logic clk_i,
@@ -48,5 +48,5 @@ interface mmio_bus_if #(
   output output_ports
   );
 
-endinterface: mmio_bus_if
+endinterface
 

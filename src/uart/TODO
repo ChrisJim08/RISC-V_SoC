@@ -3,7 +3,7 @@ Make Uart bus-agnostic
     uart_core.sv
     uart_bus_regs.sv (uart_regs.sv)
     uart_top.sv (uart.sv)
-Complete TODO complete 
+Complete TODO  
   Update fifo logic where when the fifo is full but a read is happening at the same time a write is allowed
   if ((!full) || (read_enable))
                 write_address <= write_address + 1'b1;

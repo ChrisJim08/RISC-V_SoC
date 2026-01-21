@@ -1,4 +1,4 @@
-module uart_ctrl #(
+module uart_top #(
   parameter int unsigned UartDataWidth  = 8,
   parameter int unsigned BusDataWidth   = 32,
   parameter int unsigned FifoDepth      = 16,
