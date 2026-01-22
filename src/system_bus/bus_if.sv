@@ -1,7 +1,9 @@
 //  Interface: bus_if
 //
 interface bus_if #(
-  parameter int unsigned DataWidth = 32
+  parameter  int unsigned DataWidth   = 32,
+  localparam int unsigned StrobeWidth = DataWidth / 8
+
 )(
   input logic clk_i,
   input logic rst_i
@@ -17,8 +19,8 @@ interface bus_if #(
   // Write data (W) channel
   logic w_valid;
   logic w_ready;
-  logic [DataWidth-1:0] w_data;
-  logic w_strb;
+  logic [DataWidth-1:0]   w_data;
+  logic [StrobeWidth-1:0] w_strb;
 
   // Write response (B) channel
   logic b_valid;
@@ -39,14 +41,43 @@ interface bus_if #(
   logic [1:0] r_resp;
 
   modport manager (
-  input input_ports,
-  output output_ports
+    input  aw_ready, 
+           w_ready, 
+           b_valid, 
+           b_resp, 
+           ar_ready, 
+           r_valid, 
+           r_data, 
+           r_resp,
+    output aw_valid, 
+           aw_addr, 
+           w_valid, 
+           w_data, 
+           w_strb, 
+           b_ready, 
+           ar_valid, 
+           ar_addr, 
+           r_ready
   );
 
   modport subordinate (
-  input input_ports,
-  output output_ports
+    input  aw_valid, 
+           aw_addr, 
+           w_valid, 
+           w_data, 
+           w_strb, 
+           b_ready, 
+           b_resp, 
+           ar_valid, 
+           ar_addr, 
+           r_ready,
+    output aw_ready, 
+           w_ready, 
+           b_valid, 
+           ar_ready, 
+           r_valid, 
+           r_data, 
+           r_resp
   );
 
 endinterface
-
