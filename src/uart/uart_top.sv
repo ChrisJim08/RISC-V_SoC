@@ -15,7 +15,6 @@ module uart_top #(
   output logic [BusDataWidth-1:0] bus_rdata_o
 );
   // TODO Fix rx.busy_o signal?
-  // Fix fifo rd and wr pointers to have d /q?
 
   // Internal signals
   logic baud_clk;
@@ -69,7 +68,6 @@ module uart_top #(
     end
   end
 
-                                                    // TODO: Should bus_rdata = 0  when not in use? or the addr
   always_comb begin 
     rx_fifo_rd_en = 1'b0;
     tx_fifo_wr_en = 1'b0;

@@ -46,7 +46,12 @@ module fifo #(
     end
   end
 
-  initial begin
-    if ((Depth & (Depth-1)) != 0) $error("FIFO Depth must be power of two");
-  end
+  generate
+    if ((Depth & (Depth-1)) != 0) begin
+      initial begin
+        $error("Depth (%0d) must be a power of 2", Depth);
+      end
+    end
+  endgenerate
+
 endmodule

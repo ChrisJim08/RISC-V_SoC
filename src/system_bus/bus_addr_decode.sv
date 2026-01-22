@@ -1,19 +1,25 @@
 //  Module: bus_addr_decode
 //
-module bus_addr_decode
-  #(
-    parameter int unsigned DataWidth = 32
-  )(
-    input  logic                 valid_i,
-    input  logic [DataWidth-1:0] addr_i,
-    output logic [10:0]          sel_onehot_o
-  );
+module bus_addr_decode #(
+  parameter int unsigned AddressWidth    = 32,
+  parameter int unsigned DataWidth       = 32,
+  parameter int unsigned NumSubordinates = 2
+)(
+  input  logic                       valid_i,
+  input  logic [DataWidth-1:0]       addr_i,
+  output logic                       addr_hit,
+  output logic [NumSubordinates-1:0] sel_onehot_o
+);
 
   always_comb begin
-    casez (addr_i)
+    unique case (addr_i)
       : 
-      default: 
+      :
+      default:
     endcase
+    // How will I implement out of range addresses?
+      // If dummy subordinate, use unique0
+
     
   end
 

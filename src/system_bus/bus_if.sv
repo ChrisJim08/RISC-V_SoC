@@ -1,8 +1,9 @@
 //  Interface: bus_if
 //
 interface bus_if #(
-  parameter  int unsigned DataWidth   = 32,
-  localparam int unsigned StrobeWidth = DataWidth / 8
+  parameter  int unsigned AddressWidth = 32,
+  parameter  int unsigned DataWidth    = 32,
+  localparam int unsigned StrobeWidth  = DataWidth / 8
 
 )(
   input logic clk_i,
@@ -14,7 +15,7 @@ interface bus_if #(
   // Write address (AW) channel
   logic aw_valid;
   logic aw_ready;
-  logic [DataWidth-1:0] aw_addr;
+  logic [AddressWidth-1:0] aw_addr;
 
   // Write data (W) channel
   logic w_valid;
@@ -32,11 +33,11 @@ interface bus_if #(
   // Read address (AR) channel
   logic ar_valid;
   logic ar_ready;
-  logic [DataWidth-1:0] ar_addr;
+  logic [AddressWidth-1:0] ar_addr;
 
   // Read data (R) channel
   logic r_valid;
-  lgoci r_ready;
+  logic r_ready;
   logic [DataWidth-1:0] r_data;
   logic [1:0] r_resp;
 
@@ -79,5 +80,13 @@ interface bus_if #(
            r_data, 
            r_resp
   );
+
+  generate
+    if (DataWidth % 8 != 0) begin
+      initial begin
+        $error("DataWidth (%0d) must be a multiple of 8", DataWidth);
+      end
+    end
+  endgenerate
 
 endinterface
