@@ -1,27 +1,21 @@
 //  Module: bus_fabric
 //
 module bus_fabric #(
-  parameter int unsigned AddressWidth    = 32,
-  parameter int unsigned DataWidth       = 32
+  parameter int unsigned AddressWidth = 32,
+  parameter int unsigned DataWidth    = 32,
+  parameter int unsigned NumTargets   = 2
 )( 
-  input  logic                     core_valid_i,
-  input  logic [AddressWidth-1:0 ] core_addr_i,
-  input  logic [DataWidth-1:0]     core_data_i,
-  output logic [DataWidth-1:0]     core_data_o 
+  bus_if.initiator   core_if,
+  bus_if.target s_if [NumTargets]
 );
-
-// Localparameters
-
-  localparam int unsigned NumSubordinates = 2;  // will probably not use, just hardcode it in
 
 // Internal Signals
 
-  logic [NumSubordinates-1:0] sel_onehot;
+  logic [NumTargets-1:0] sel_onehot;
   
 
-
-  // Fowards managers request to exactly one subordinate
-  always_comb begin : subordinate_mux // Request-side mux
+  // Fowards initiators request to exactly one target
+  always_comb begin : target_mux // Request-side mux
     unique case (sel_onehot)
       :
       :
@@ -29,8 +23,8 @@ module bus_fabric #(
     endcase
   end
 
-  // Forwards subordinate's response to manager
-  always_comb begin : manager_mux // Response-side mux
+  // Forwards target's response to initiator
+  always_comb begin : initiator_mux // Response-side mux
     unique case (sel_onehot)
       :
       :
@@ -41,7 +35,7 @@ module bus_fabric #(
   bus_addr_decode #(
     .AddressWidth(AddressWidth),
     .DataWidth(DataWidth),
-    .NumSubordinates(NumSubordinates)
+    .NumTargets(NumTargets)
   )(
     .valid_i(core_valid_i),
     .addr_i(core_addr_i),

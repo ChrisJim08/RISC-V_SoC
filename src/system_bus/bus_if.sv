@@ -41,7 +41,7 @@ interface bus_if #(
   logic [DataWidth-1:0] r_data;
   logic [1:0] r_resp;
 
-  modport manager (
+  modport initiator (
     input  aw_ready, 
            w_ready, 
            b_valid, 
@@ -61,7 +61,7 @@ interface bus_if #(
            r_ready
   );
 
-  modport subordinate (
+  modport target (
     input  aw_valid, 
            aw_addr, 
            w_valid, 
