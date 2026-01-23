@@ -7,7 +7,7 @@ module bus_addr_decode #(
 )(
   input  logic                       valid_i,
   input  logic [DataWidth-1:0]       addr_i,
-  output logic                       addr_hit,
+  output logic                       addr_hit, // Is this needed?
   output logic [NumSubordinates-1:0] sel_onehot_o
 );
 
@@ -20,6 +20,7 @@ module bus_addr_decode #(
     // How will I implement out of range addresses?
       // If dummy subordinate, use unique0
 
+    // Will possibly implement addr_offset for local addresses within subordinate regs
     
   end
 
