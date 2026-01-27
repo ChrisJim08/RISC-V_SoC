@@ -1,4 +1,8 @@
-interface
+add addr_decode's valid_i gating
+fix in/exclusivitity of address limits
+el_onehot_o[RAM_IDX]=1;
+or use a localparam onehot constant per target.
+
 subordinate/manager muxs
   request-side mux/demux
   response-side mux
@@ -6,3 +10,4 @@ subordinate adapter
 asserations?
 add a LSU to my core (Load/store unit)
 fix utilization of Datawidth in core
+fix uart svh

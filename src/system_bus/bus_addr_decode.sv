@@ -1,28 +1,35 @@
 //  Module: bus_addr_decode
 //
+
+import memmap_pkg::*;
+
 module bus_addr_decode #(
   parameter int unsigned AddressWidth = 32,
-  parameter int unsigned DataWidth    = 32,
   parameter int unsigned NumTargets   = 2
 )(
-  input  logic                  valid_i,
-  input  logic [DataWidth-1:0]  addr_i,
-  output logic                  addr_hit, // Is this needed?
-  output logic [NumTargets-1:0] sel_onehot_o
+  input  logic                     valid_i,
+  input  logic [AddressWidth-1:0]  addr_i,
+  output logic                     addr_hit_o,
+  output logic [NumTargets-1:0]    sel_onehot_o
 );
 
   always_comb begin
-    unique case (addr_i)
-      : 
-      :
-      default:
-    endcase
-    // How will I implement out of range addresses?
-      // If dummy target, use unique0
+    addr_hit_o   = 1'b0;
+    sel_onehot_o = '0;
 
-    // Will possibly implement addr_offset for local addresses within target regs
-    
+    if ((addr_i >= RamBase) && (addr_i < RamLimit)) begin
+      addr_hit_o   = 1'b1;
+      sel_onehot_o = NumTargets'('b01);
+    end
+    else begin
+      unique0 case (addr_i[31:12])
+        UartKey: begin // UART
+          addr_hit_o   = 1'b1;
+          sel_onehot_o = NumTargets'('b10);
+        end
+        default: ;
+      endcase
+    end
   end
 
-  
 endmodule
