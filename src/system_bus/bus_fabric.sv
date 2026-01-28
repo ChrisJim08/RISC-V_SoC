@@ -5,8 +5,8 @@ module bus_fabric #(
   parameter int unsigned DataWidth    = 32,
   parameter int unsigned NumTargets   = 2
 )( 
-  bus_if.initiator   core_if,
-  bus_if.target s_if [NumTargets]
+  bus_if.initiator core_if,
+  bus_if.target    target_ifs [NumTargets]
 );
 
 // Internal Signals
@@ -34,7 +34,6 @@ module bus_fabric #(
 
   bus_addr_decode #(
     .AddressWidth(AddressWidth),
-    .DataWidth(DataWidth),
     .NumTargets(NumTargets)
   )(
     .valid_i(core_valid_i),
