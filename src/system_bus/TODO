@@ -1,7 +1,5 @@
 add addr_decode's valid_i gating
-fix in/exclusivitity of address limits
-el_onehot_o[RAM_IDX]=1;
-or use a localparam onehot constant per target.
+fix SoC's dmem's ports
 
 subordinate/manager muxs
   request-side mux/demux

@@ -1,13 +1,19 @@
+//  Module: riscv_soc_top
+//
 module riscv_soc_top #(
   localparam int unsigned AddressWidth = 10,
   localparam int unsigned DataWidth    = 32,
   localparam int unsigned NumTargets   = 2
 )(
   input logic                     clk_i,
-  input logic                     rst_i, 
+  input logic                     rst_i,
+
+// Instruction memory ports 
   input logic                     imem_load_i, 
   input logic  [AddressWidth-1:0] imem_load_addr_i, 
   input logic  [DataWidth-1:0]    imem_load_data_i,
+  
+// Simulation signal
   output logic                    halt_o  
 );
 
@@ -27,12 +33,13 @@ module riscv_soc_top #(
 // SoC
   riscv_soc #(
     .AddressWidth(AddressWidth),
-    .DataWidth(DataWidth)
-  ) riscv_core (
+    .DataWidth(DataWidth),
+    .NumTargets(NumTargets)
+  ) riscv_soc (
     .clk_i(clk_i),
     .rst_i(rst_i),
     .instr_i(instr),
-    .imem_addr_o(core_imem_addr),
+    .core_imem_addr_o(core_imem_addr),
     .dmem_r_data_i(dmem_r_data),
     .dmem_wr_en_o(dmem_wr_en),
     .dmem_addr_o(dmem_addr),
