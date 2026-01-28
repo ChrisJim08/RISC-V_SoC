@@ -1,5 +1,6 @@
 add addr_decode's valid_i gating
-fix SoC's dmem's ports
+fix SoC's dmem's ports (use _if?)
+  Use adapter in toplevel module or SoC module (by using the dmem ports)
 
 subordinate/manager muxs
   request-side mux/demux

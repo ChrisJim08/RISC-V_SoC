@@ -39,6 +39,7 @@ module riscv_soc #(
   );
 
 // Core's bus adapter
+  // TODO
 
 // SoC core
   riscv_core #(
@@ -55,5 +56,8 @@ module riscv_soc #(
     .dmem_wr_data_o(dmem_wr_data_o),
     .halt_o(halt_o)
   );
+
+// dmem's (RAM) bus adapter
+  // TODO
 
 endmodule
