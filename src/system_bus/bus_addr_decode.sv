@@ -7,27 +7,29 @@ module bus_addr_decode #(
   parameter int unsigned AddressWidth = 32,
   parameter int unsigned NumTargets   = 2
 )(
-  input  logic                     valid_i,
-  input  logic [AddressWidth-1:0]  addr_i,
-  output logic                     addr_hit_o,
-  output logic [NumTargets-1:0]    sel_onehot_o
+  input  logic                    valid_i,
+  input  logic [AddressWidth-1:0] addr_i,
+  output logic                    addr_hit_o,
+  output logic [NumTargets-1:0]   sel_onehot_o
 );
 
   always_comb begin
-    addr_hit_o   = 1'b0;
     sel_onehot_o = '0;
+    addr_hit_o   = 1'b0;
 
-    if ((addr_i >= RamBase) && (addr_i < RamLimit)) begin
-      addr_hit_o   = 1'b1;
-      sel_onehot_o = NumTargets'('b01);
+    if ((addr_i >= RamBase) && (addr_i <= RamLimit)) begin
+      sel_onehot_o[RamIdx] = 1'b1;
+      addr_hit_o           = 1'b1;
     end
     else begin
       unique0 case (addr_i[31:12])
         UartKey: begin // UART
-          addr_hit_o   = 1'b1;
-          sel_onehot_o = NumTargets'('b10);
+          sel_onehot_o[UartIdx] = 1'b1;
+          addr_hit_o            = 1'b1;
         end
-        default: ;
+        default: begin
+          // Unmapped
+        end
       endcase
     end
   end
