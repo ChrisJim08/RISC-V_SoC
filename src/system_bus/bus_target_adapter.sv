@@ -6,9 +6,7 @@ module bus_target_adapter #(
 );
 
 /*
-  Standardizes how targets talk to the bus
-  
-
+  Standardizes how targets talk to the bus TODO
 */
   
 endmodule

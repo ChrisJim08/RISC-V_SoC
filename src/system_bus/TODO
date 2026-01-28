@@ -1,13 +1,8 @@
-add addr_decode's valid_i gating
 fix SoC's dmem's ports (use _if?)
   Use adapter in toplevel module or SoC module (by using the dmem ports)
+fix uart svh
 
-subordinate/manager muxs
-  request-side mux/demux
-  response-side mux
-subordinate adapter
 asserations?
 add a LSU to my core (Load/store unit)
 fix utilization of Datawidth in core
-fix uart svh
 fix core's repo top module's params

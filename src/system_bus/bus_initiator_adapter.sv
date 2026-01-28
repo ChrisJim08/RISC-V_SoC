@@ -12,9 +12,7 @@ module bus_initiator_adapter #(
 );
 
   /*
-  Standardizes how initiators talk to the bus
-    are the signals using the ports needed or will the core use the signals within the bus_if?
-
+  Standardizes how initiators talk to the bus TODO
   */
   
 endmodule

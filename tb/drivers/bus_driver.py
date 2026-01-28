@@ -2,7 +2,6 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
 
-# TODO: Correct comments as I continue to learn and actually implement my bus
 # Bus Functional Model
 class BusDriver:
   def __init__(self, dut):

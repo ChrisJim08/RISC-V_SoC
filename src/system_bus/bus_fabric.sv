@@ -14,8 +14,8 @@ module bus_fabric #(
   logic [NumTargets-1:0] sel_onehot;
   
 
-  // Fowards initiators request to exactly one target
-  always_comb begin : target_mux // Request-side mux
+// Fowards initiators request to exactly one target
+  always_comb begin : target_mux // Request-side mux TODO
     unique case (sel_onehot)
       :
       :
@@ -23,8 +23,8 @@ module bus_fabric #(
     endcase
   end
 
-  // Forwards target's response to initiator
-  always_comb begin : initiator_mux // Response-side mux
+// Forwards target's response to initiator
+  always_comb begin : initiator_mux // Response-side mux TODO
     unique case (sel_onehot)
       :
       :
@@ -40,6 +40,5 @@ module bus_fabric #(
     .addr_i(core_addr_i),
     sel_onehot_o(sel_onehot)
   );
-
   
 endmodule
