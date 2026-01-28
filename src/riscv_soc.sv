@@ -38,8 +38,7 @@ module riscv_soc #(
     .s_if(target_ifs)
   );
 
-// Core's bus adapter
-  // TODO
+// Core's bus adapter TODO
 
 // SoC core
   riscv_core #(
@@ -57,7 +56,6 @@ module riscv_soc #(
     .halt_o(halt_o)
   );
 
-// dmem's (RAM) bus adapter
-  // TODO
+// dmem's (RAM) bus adapter TODO
 
 endmodule

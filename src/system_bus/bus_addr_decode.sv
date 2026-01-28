@@ -18,7 +18,7 @@ module bus_addr_decode #(
     addr_hit_o   = 1'b0;
 
     if (valid_i) begin
-      if ((addr_i >= RamBase) && (addr_i <= RamLimit)) begin
+      if ((addr_i >= RamBase) && (addr_i < RamLimit)) begin
         sel_onehot_o[RamIdx] = 1'b1;
         addr_hit_o           = 1'b1;
       end
@@ -29,7 +29,7 @@ module bus_addr_decode #(
             addr_hit_o            = 1'b1;
           end
           default: begin
-            // Unmapped
+            // TODO Unmapped
           end
         endcase
       end
