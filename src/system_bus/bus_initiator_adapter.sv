@@ -11,8 +11,11 @@ module bus_initiator_adapter #(
   bus_if.initiator                 bus
 );
 
-  /*
-  Standardizes how initiators talk to the bus TODO
-  */
+  always_ff @(posedge clock ) begin
+    
+  end
+  if (valid_i) begin
+    
+  end
   
 endmodule

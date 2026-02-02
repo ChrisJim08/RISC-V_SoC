@@ -8,7 +8,7 @@ module uart_top #(
   input  logic                    clk_i,
   input  logic                    rst_i,
   input  logic                    rxd_i,
-  input  logic                    bus_wr_en_i,
+  input  logic                    bus_valid_i,
   input  logic [BusDataWidth-1:0] bus_addr_i,
   input  logic [BusDataWidth-1:0] bus_wdata_i,
   output logic                    txd_o,
@@ -77,7 +77,7 @@ module uart_top #(
 
     unique case (bus_addr_i[1:0])
       2'b00: begin 
-        if (bus_wr_en_i) begin
+        if (bus_valid_i) begin
           baud_rate_d      = bus_wdata_i[1:0]; 
         end else begin
           bus_rdata_o[1:0] = baud_rate_q;
@@ -89,7 +89,7 @@ module uart_top #(
         bus_rdata_o      = BusDataWidth'(rx_fifo_rdata);           
       end
       2'b11: begin 
-        if (bus_wr_en_i) begin
+        if (bus_valid_i) begin
           tx_fifo_wr_en = 1'b1; 
           tx_wdata_d = bus_wdata_i[7:0]; 
         end

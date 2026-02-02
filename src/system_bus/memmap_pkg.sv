@@ -2,10 +2,13 @@
 //
 package memmap_pkg;
   
+// localparams
+  localparam int unsigned NumTargets = 2;
 // Exclusive limits
 
 // RAM
   localparam int unsigned RamIdx    = 0;
+  localparam logic [NumTargets-1:0]  = ;
   localparam logic [31:0] RamBase   = 32'h0000_0000;
   localparam logic [31:0] RamLimit  = 32'h0001_0000; 
 

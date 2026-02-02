@@ -9,6 +9,8 @@ module bus_fabric #(
   bus_if.target    target_ifs [NumTargets]
 );
 
+  
+
 // Internal Signals
 
   logic [NumTargets-1:0] sel_onehot;
@@ -38,7 +40,7 @@ module bus_fabric #(
   )(
     .valid_i(core_valid_i),
     .addr_i(core_addr_i),
-    sel_onehot_o(sel_onehot)
+    .sel_onehot_o(sel_onehot)
   );
   
 endmodule

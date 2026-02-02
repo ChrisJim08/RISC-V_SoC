@@ -20,8 +20,7 @@ module bus_addr_decode #(
     if (valid_i) begin
       if ((addr_i >= RamBase) && (addr_i < RamLimit)) begin
         sel_onehot_o[RamIdx] = 1'b1;
-        addr_hit_o           = 1'b1;
-      end
+       end
       else begin
         unique0 case (addr_i[AddressWidth-1:12])
           UartKey: begin // UART
