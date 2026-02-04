@@ -27,64 +27,93 @@ module bus_fabric #(
 // Handshake flag logic
   // Write address (AW)
   assign aw_handshake = core_if.aw_valid && core_if.aw_ready;
-
-  // Write data (W)
-  assign w_handshake = core_if.w_ready && core_if.w_valid;
   
   // Write response (B)
   assign b_handshake = core_if.b_ready && core_if.b_valid;
+  
+  // Read address (AR)
+  assign ar_handshake = core_if.ar_valid && core_if.ar_ready;
   
 // One-hot sel / inflight logic
   always_ff @(posedge clk_i) begin
     // Latch target during AW handshake
     if (aw_handshake) begin
       wr_inflight  <= 1'b1;
-      sel_onehot_q <= sel_onehot_d;
     end
     
     if (b_handshake) begin
       wr_inflight <= 1'b0;
     end
+
+    if (ar_handshake) begin
+      r_inflight  <= 1'b1;
+    end
+    
+    if (r_handshake) begin
+      r_inflight <= 1'b0;
+    end
+
+    if (aw_handshake || ar_handshake) begin
+      sel_onehot_q <= sel_onehot_d;
+    end
   end
   
-  assign sel_onehot = wr_inflight ? sel_onehot_q : sel_onehot_d; 
+  assign sel_onehot = (aw_handshake || ar_handshake) ? sel_onehot_q : sel_onehot_d; 
 
-// Write channels forward routing
+// Forward routing
   always_comb begin : req_demux
   // Defaults
     for (i = 0; i < NumTargets; i++) begin
-    // AW channel
+    // Write channels
+      // AW
       target_ifs[i].aw_valid = 1'b0;
       target_ifs[i].aw_addr  = '0;
 
-    // W channel
-      target_ifs[i].w_valid  = 1'b0;
-      target_ifs[i].w_data   = '0;
-      target_ifs[i].w_strb   = '0;
+      // W
+      target_ifs[i].w_valid = 1'b0;
+      target_ifs[i].w_data  = '0;
+      target_ifs[i].w_strb  = '0;
 
-    // B channel
-      target_ifs[i].b_ready   = 1'b0;
+      // B
+      target_ifs[i].b_ready = 1'b0;
+    
+    // Read channels
+      // AR
+      target_ifs[i].ar_valid = 1'b0;
+      target_ifs[i].ar_addr  = '0;
+
+      // R
+      target_ifs[i].r_ready = 1'b0;
     end
 
-  // Selective routing
+  // Routing
     for (i = 0; i < NumTargets; i++) begin 
       if (sel_onehot[i]) begin
-      // Aw channel
+      // Write channels
+        // AW
         target_ifs[i].aw_valid = core_if.aw_valid && addr_hit;
         target_ifs[i].aw_addr  = core_if.aw_addr;
       
-      // W channel
+        // W
         target_ifs[i].w_valid = core_if.w_valid;
         target_ifs[i].w_data  = core_if.w_data;
         target_ifs[i].w_strb  = core_if.w_strb;
       
-      // B channel
+        // B
         target_ifs[i].b_ready = core_if.b_ready;
+    
+      // Read channels
+        // AR
+        target_ifs[i].ar_valid = core_if.ar_valid;
+        target_ifs[i].ar_addr  = core_if.ar_addr;
+
+        // R
+        target_ifs[i].r_ready = core_if.r_ready;
       end
     end
   end
   
-// Forwards target's response to initiator
+// Backward routings
   always_comb begin : initiator_mux // Response-side mux TODO
     core_if.aw_ready = 1'b0;
     core_if.w_ready = 1'b0;
