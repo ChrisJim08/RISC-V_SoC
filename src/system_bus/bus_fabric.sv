@@ -34,54 +34,62 @@ module bus_fabric #(
   // Read address (AR)
   assign ar_handshake = core_if.ar_valid && core_if.ar_ready;
   
+  // Read data (R)
+  assign r_handshake = core_if.r_ready && core_if.r_valid;
+  
 // One-hot sel / inflight logic
-  always_ff @(posedge clk_i) begin
-    // Latch target during AW handshake
-    if (aw_handshake) begin
+  always_ff @(posedge clk_i or posedge rst_i) begin
+    if (rst_i) begin
       wr_inflight  <= 1'b1;
-    end
-    
-    if (b_handshake) begin
-      wr_inflight <= 1'b0;
-    end
+      r_inflight   <= 1'b1;
+      sel_onehot_q <= '0;
+      
+    end else begin
+      if (aw_handshake) begin
+        wr_inflight  <= 1'b1;
+      end
+      
+      if (b_handshake) begin
+        wr_inflight <= 1'b0;
+      end
 
-    if (ar_handshake) begin
-      r_inflight  <= 1'b1;
-    end
-    
-    if (r_handshake) begin
-      r_inflight <= 1'b0;
-    end
+      if (ar_handshake) begin
+        r_inflight  <= 1'b1;
+      end
+      
+      if (r_handshake) begin
+        r_inflight <= 1'b0;
+      end
 
-    if (aw_handshake || ar_handshake) begin
-      sel_onehot_q <= sel_onehot_d;
+    // Latch target during AW / AR handshake
+      if (aw_handshake || ar_handshake) begin
+        sel_onehot_q <= sel_onehot_d;
+      end
     end
   end
   
-  assign sel_onehot = (aw_handshake || ar_handshake) ? sel_onehot_q : sel_onehot_d; 
+  // To avoid
+  assign sel_onehot = (wr_inflight || r_inflight) ? sel_onehot_q : sel_onehot_d; 
 
 // Forward routing
-  always_comb begin : req_demux
+  always_comb begin : target_demux
   // Defaults
     for (i = 0; i < NumTargets; i++) begin
     // Write channels
       // AW
       target_ifs[i].aw_valid = 1'b0;
       target_ifs[i].aw_addr  = '0;
-
       // W
       target_ifs[i].w_valid = 1'b0;
       target_ifs[i].w_data  = '0;
       target_ifs[i].w_strb  = '0;
-
       // B
       target_ifs[i].b_ready = 1'b0;
-    
+
     // Read channels
       // AR
       target_ifs[i].ar_valid = 1'b0;
       target_ifs[i].ar_addr  = '0;
-
       // R
       target_ifs[i].r_ready = 1'b0;
     end
@@ -91,14 +99,12 @@ module bus_fabric #(
       if (sel_onehot[i]) begin
       // Write channels
         // AW
-        target_ifs[i].aw_valid = core_if.aw_valid && addr_hit;
+        target_ifs[i].aw_valid = core_if.aw_valid;
         target_ifs[i].aw_addr  = core_if.aw_addr;
-      
         // W
         target_ifs[i].w_valid = core_if.w_valid;
         target_ifs[i].w_data  = core_if.w_data;
         target_ifs[i].w_strb  = core_if.w_strb;
-      
         // B
         target_ifs[i].b_ready = core_if.b_ready;
     
@@ -106,7 +112,6 @@ module bus_fabric #(
         // AR
         target_ifs[i].ar_valid = core_if.ar_valid;
         target_ifs[i].ar_addr  = core_if.ar_addr;
-
         // R
         target_ifs[i].r_ready = core_if.r_ready;
       end
@@ -114,23 +119,43 @@ module bus_fabric #(
   end
   
 // Backward routings
-  always_comb begin : initiator_mux // Response-side mux TODO
+  always_comb begin : initiator_mux
+  // Defaults
+    // Write channels
+    // AW
     core_if.aw_ready = 1'b0;
+    // W
     core_if.w_ready = 1'b0;
+    // B
     core_if.b_valid = 1'b0;
     core_if.b_resp = '0;
+
+    // Read channels
+    // AR
     core_if.ar_ready = 1'b0;
+    // R
     core_if.r_valid = 1'b0;
     core_if.r_data = '0;
     core_if.r_resp = '0;
 
     for (int j = 0; j < NumTargets; j++) begin
-      if (sel_active[j]) begin
-        core_if.aw_ready = target_ifs[j].aw_ready && addr_hit && !wr_inflight_q;
+      if (sel_onehot[j]) begin
+      // Write channels
+        // AW
+        core_if.aw_ready = target_ifs[j].aw_ready;
+        // W
         core_if.w_ready  = target_ifs[j].w_ready;
-
+        // B
         core_if.b_valid  = target_ifs[j].b_valid;
         core_if.b_resp   = target_ifs[j].b_resp;
+
+      // Read channels
+        // AR
+        core_if.ar_ready = target_ifs[j].ar_ready;
+        // R
+        core_if.r_valid = target_ifs[j].r_valid;
+        core_if.r_data = target_ifs[j].r_data;
+        core_if.r_resp = target_ifs[j].r_resp;
       end
     end
   end
@@ -141,6 +166,7 @@ module bus_fabric #(
   ) addr_decoder (
     .valid_i(core_if.aw_valid),
     .addr_i(core_if.aw_addr),
+    .addr_hit_o(), // TODO implement addr_hit validation
     .sel_onehot_o(sel_onehot_d)
   );
   
