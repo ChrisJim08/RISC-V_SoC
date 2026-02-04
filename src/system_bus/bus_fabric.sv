@@ -10,7 +10,8 @@ module bus_fabric #(
   bus_if.initiator core_if,
   bus_if.target    target_ifs [NumTargets]
 );
-
+// temp
+  logic buffered;
 // Internal Signals
 
   // Status flags
@@ -55,18 +56,25 @@ module bus_fabric #(
       wr_sel_onehot_q <= '0;
       rd_sel_onehot_q <= '0;
 
-    end else begin
+    end else begin 
+      // Handshake and latch w_data and w_strb 
+      // When address has not been given
+      if (!aw_seen && !w_seen && core_if.w_valid) begin
+      w_data_buffer <= core_if.w_data;
+      w_strb_buffer <= core_if.w_strb;
+      core_if.w_ready <= 1'b1;
+      w_buffer_full <= 1'b1;
+      end
+
       if (aw_handshake) begin
         aw_seen <= 1'b1;
       end
       
       if (w_handshake) begin
         w_seen <= 1'b1;
-        // if (!aw_seen) latch data and strobe
-        // w_data_d <= core_if.w_data; 
       end
       
-      if (b_handshake && wr_busy) begin
+      if (b_handshake && wr_inflight) begin
         aw_seen <= 1'b0;
         w_seen  <= 1'b0;
         wr_sel_onehot_q <= '0;
@@ -96,8 +104,8 @@ module bus_fabric #(
   assign rd_sel_onehot = rd_inflight ? rd_sel_onehot_q : rd_sel_onehot_d;
 
 // In-flight / Busy flag logic
-  assign wr_busy     = aw_seen && w_seen;
-  assign wr_inflight = aw_seen || w_seen;
+  assign wr_busy     = aw_seen || w_seen;
+  assign wr_inflight = aw_seen && w_seen;
 
 // Forward routing
   always_comb begin : target_demux
@@ -127,19 +135,23 @@ module bus_fabric #(
     // Write channels
       if (wr_sel_onehot[i]) begin
       // AW
-        if (!aw_seen) begin
+        if (!aw_seen) begin //*
           target_ifs[i].aw_valid = core_if.aw_valid;
           target_ifs[i].aw_addr  = core_if.aw_addr;
         end
 
       // W
-        if (!w_seen) begin
-          target_ifs[i].w_valid = core_if.w_valid;
-          target_ifs[i].w_data  = core_if.w_data;
-          target_ifs[i].w_strb  = core_if.w_strb;
-        end 
+        if (!w_seen) begin //*
+          target_ifs[i].w_valid = core_if.w_valid; // buffered ?
+          target_ifs[i].w_data  = core_if.w_data;  // buffered ?
+          target_ifs[i].w_strb  = core_if.w_strb;  // buffered ?
+        end else if (wr_inflight && buffered) begin
+          target_ifs[i].w_valid = buff_w_valid; 
+          target_ifs[i].w_data  = buff_w_data;  
+          target_ifs[i].w_strb  = buff_w_strb;  
+        end
       // B
-        if (wr_busy) begin
+        if (wr_inflight) begin //*
           target_ifs[i].b_ready = core_if.b_ready;
         end
       end
@@ -147,7 +159,7 @@ module bus_fabric #(
     // Read channels
       if (rd_sel_onehot[i]) begin
       // AR
-        if (!rd_inflight) begin
+        if (!rd_inflight) begin //*
           target_ifs[i].ar_valid = core_if.ar_valid;
           target_ifs[i].ar_addr  = core_if.ar_addr;
         end
