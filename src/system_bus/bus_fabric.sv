@@ -10,8 +10,11 @@ module bus_fabric #(
   bus_if.initiator core_if,
   bus_if.target    target_ifs [NumTargets]
 );
-// temp
-  logic buffered;
+  // Write buffer
+  logic w_buffered, w_buffer_full;
+
+  logic w_before_aw;
+
 // Internal Signals
 
   // Status flags
@@ -35,7 +38,6 @@ module bus_fabric #(
   assign aw_handshake = core_if.aw_valid && core_if.aw_ready;
 
   // Write data (W)
-
   assign w_handshake = core_if.w_ready && core_if.w_valid;
   
   // Write response (B)
@@ -56,21 +58,27 @@ module bus_fabric #(
       wr_sel_onehot_q <= '0;
       rd_sel_onehot_q <= '0;
 
+      w_data_buffer <= '0;
+      w_strb_buffer <= '0;
+      w_buffer_full <= 1'b0;
+
     end else begin 
       // Handshake and latch w_data and w_strb 
       // When address has not been given
-      if (!aw_seen && !w_seen && core_if.w_valid) begin
-      w_data_buffer <= core_if.w_data;
-      w_strb_buffer <= core_if.w_strb;
-      core_if.w_ready <= 1'b1;
-      w_buffer_full <= 1'b1;
+      if (!aw_seen && !w_seen && core_if.w_valid && !w_buffer_full) begin
+        core_if.w_ready <= 1'b1;
+        w_data_buffer <= core_if.w_data;
+        w_strb_buffer <= core_if.w_strb;
+        w_buffer_full   <= 1'b1;
       end
 
-      if (aw_handshake) begin
-        aw_seen <= 1'b1;
+      if (aw_handshake && !aw_seen) begin // Redundant?
+        aw_seen <= 1'b1; 
+                
+        wr_sel_onehot_q <= wr_sel_onehot_d;
       end
       
-      if (w_handshake) begin
+      if (w_handshake && !w_seen) begin
         w_seen <= 1'b1;
       end
       
@@ -78,33 +86,32 @@ module bus_fabric #(
         aw_seen <= 1'b0;
         w_seen  <= 1'b0;
         wr_sel_onehot_q <= '0;
+
+        if (w_buffer_full) begin
+          w_data_buffer <= '0;
+          w_strb_buffer <= '0;
+          w_buffer_full <= 1'b0;
+        end
       end
 
       if (ar_handshake && !rd_inflight) begin
         rd_inflight  <= 1'b1;
+
+        rd_sel_onehot_q <= rd_sel_onehot_d;
       end
       
-      if (r_handshake) begin
-        rd_inflight <= 1'b0;
+      if (r_handshake && rd_inflight) begin
+        rd_inflight     <= 1'b0;
         rd_sel_onehot_q <= '0;
-      end
-
-    // Latch target during AW / AR handshake
-      if (aw_handshake) begin
-        wr_sel_onehot_q <= wr_sel_onehot_d;
-      end
-      if (ar_handshake) begin
-        rd_sel_onehot_q <= rd_sel_onehot_d;
       end
     end
   end
   
-  // Use latched selection while transaction is in-flight
+  // Use latched selection while transaction is in-flight                 // Redundant?
   assign wr_sel_onehot = aw_seen ? wr_sel_onehot_q : wr_sel_onehot_d;
   assign rd_sel_onehot = rd_inflight ? rd_sel_onehot_q : rd_sel_onehot_d;
 
 // In-flight / Busy flag logic
-  assign wr_busy     = aw_seen || w_seen;
   assign wr_inflight = aw_seen && w_seen;
 
 // Forward routing
@@ -196,7 +203,8 @@ module bus_fabric #(
       // AW
         core_if.aw_ready = aw_seen ? 1'b0 : target_ifs[j].aw_ready;
       // W
-        core_if.w_ready  = w_seen ? 1'b0 : target_ifs[j].w_ready;
+        core_if.w_ready  = w_seen ? 1'b0 : target_ifs[j].w_ready;     // Add logic to handshake for W before AW
+        // (w_before_aw ? w_ready_buffer : target_ifs[j].w_ready);
       // B
         core_if.b_valid  = target_ifs[j].b_valid;
         core_if.b_resp   = target_ifs[j].b_resp;
