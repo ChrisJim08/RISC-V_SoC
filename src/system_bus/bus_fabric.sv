@@ -127,84 +127,83 @@ module bus_fabric #(
   end
   
 
+    int i, k;
+  genvar g;
+  generate
+    for (g = 0; g < NumTargets; g++) begin
+    // Forward routing
+      always_comb begin : target_demux
+      // Defaults
+        w_direct_hs    = 0'b0;
+        w_buf_drain_hs = 0'b0;
 
-// Forward routing
-  always_comb begin : target_demux
-  // Defaults
-    w_direct_hs    = 0'b0;
-    w_buf_drain_hs = 0'b0;
+        // Write channels
+          // AW
+          target_ifs[g].aw_valid = 1'b0;
+          target_ifs[g].aw_addr  = '0;
+          // W
+          target_ifs[g].w_valid = 1'b0;
+          target_ifs[g].w_data  = '0;
+          target_ifs[g].w_strb  = '0;
+          // B
+          target_ifs[g].b_ready = 1'b0;
 
-    for (int i = 0; i < NumTargets; i++) begin
-    // Write channels
-      // AW
-      target_ifs[i].aw_valid = 1'b0;
-      target_ifs[i].aw_addr  = '0;
-      // W
-      target_ifs[i].w_valid = 1'b0;
-      target_ifs[i].w_data  = '0;
-      target_ifs[i].w_strb  = '0;
-      // B
-      target_ifs[i].b_ready = 1'b0;
+        // Read channels
+          // AR
+          target_ifs[g].ar_valid = 1'b0;
+          target_ifs[g].ar_addr  = '0;
+          // R
+          target_ifs[g].r_ready = 1'b0;
 
-    // Read channels
-      // AR
-      target_ifs[i].ar_valid = 1'b0;
-      target_ifs[i].ar_addr  = '0;
-      // R
-      target_ifs[i].r_ready = 1'b0;
-    end
+      // Routing
+      // Write channels
+        if (wr_sel_onehot[g]) begin
+        // AW
+          if (!aw_hs_seen) begin //*
+            target_ifs[g].aw_valid = core_if.aw_valid;
+            target_ifs[g].aw_addr  = core_if.aw_addr;
+          end 
 
-  // Routing
-    for (int i = 0; i < NumTargets; i++) begin 
-    // Write channels
-      if (wr_sel_onehot[i]) begin
-      // AW
-        if (!aw_hs_seen) begin //*
-          target_ifs[i].aw_valid = core_if.aw_valid;
-          target_ifs[i].aw_addr  = core_if.aw_addr;
-        end 
-        OR();
-
-      // W
-        if (!w_hs_seen) begin
-          if (drain_w_buf) begin 
-            target_ifs[i].w_valid = 1'b1; 
-            target_ifs[i].w_data  = buff_w_data;  
-            target_ifs[i].w_strb  = buff_w_strb;  
-          end else if (!use_w_buf) begin
-            target_ifs[i].w_valid = core_if.w_valid;
-            target_ifs[i].w_data  = core_if.w_data; 
-            target_ifs[i].w_strb  = core_if.w_strb; 
+        // W
+          if (!w_hs_seen) begin
+            if (drain_w_buf) begin 
+              target_ifs[g].w_valid = 1'b1; 
+              target_ifs[g].w_data  = buff_w_data;  
+              target_ifs[g].w_strb  = buff_w_strb;  
+            end else if (!use_w_buf) begin
+              target_ifs[g].w_valid = core_if.w_valid;
+              target_ifs[g].w_data  = core_if.w_data; 
+              target_ifs[g].w_strb  = core_if.w_strb; 
+            end
           end
-        end
-      
-      // B
-        if (wr_inflight) begin
-          target_ifs[i].b_ready = core_if.b_ready;
-        end
+        
+        // B
+          if (wr_inflight) begin
+            target_ifs[g].b_ready = core_if.b_ready;
+          end
 
-      // Handshakes
-        // Direct handshake (Initiator <-> Target)
-        w_direct_hs |= target_ifs[i].w_valid && target_ifs[i].w_ready && !drain_w_buf; 
-        // Buffer drain handshake (Fabric <-> Target)
-        w_buf_drain_hs |= target_ifs[i].w_valid && target_ifs[i].w_ready && drain_w_buf;
-
-      end
-
-       
-    // Read channels
-      if (rd_sel_onehot[i]) begin
-      // AR
-        if (!rd_inflight) begin //*
-          target_ifs[i].ar_valid = core_if.ar_valid;
-          target_ifs[i].ar_addr  = core_if.ar_addr;
+        // Handshakes
+          // Direct handshake (Initiator <-> Target)
+          w_direct_hs |= target_ifs[g].w_valid && target_ifs[g].w_ready && !drain_w_buf;  // TODO Need fix after generate?
+          // Buffer drain handshake (Fabric <-> Target)
+          w_buf_drain_hs |= target_ifs[g].w_valid && target_ifs[g].w_ready && drain_w_buf;
         end
 
-      // R
-        target_ifs[i].r_ready = core_if.r_ready;
-      end
+          
+      // Read channels
+        if (rd_sel_onehot[g]) begin
+        // AR
+          if (!rd_inflight) begin //*
+            target_ifs[g].ar_valid = core_if.ar_valid;
+            target_ifs[g].ar_addr  = core_if.ar_addr;
+          end
+
+        // R
+          target_ifs[g].r_ready = core_if.r_ready;
+        end
+      end // end of target_demux
     end
-  end
+  endgenerate
   
 // Backward routings
   always_comb begin : initiator_mux
