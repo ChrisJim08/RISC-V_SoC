@@ -4,10 +4,6 @@ interface bus_if #(
   parameter  int unsigned AddressWidth = 32,
   parameter  int unsigned DataWidth    = 32,
   localparam int unsigned StrobeWidth  = DataWidth / 8
-
-)(
-  input logic clk_i,
-  input logic rst_i
 );
 
 // Write Channels
@@ -82,7 +78,7 @@ interface bus_if #(
   );
 
   generate
-    if (DataWidth % 8 != 0) begin
+    if (DataWidth % 8 != 0) begin: datawidth_error
       initial begin
         $error("DataWidth (%0d) must be a multiple of 8", DataWidth);
       end

@@ -18,7 +18,7 @@ module bus_addr_decode #(
     addr_hit_o   = 1'b0;
 
     if (valid_i) begin
-      if ((addr_i >= RamBase) && (addr_i < RamLimit)) begin // RAM
+      if (addr_i < RamLimit) begin // RAM
         addr_hit_o           = 1'b1;
         sel_onehot_o[RamIdx] = 1'b1;
        end

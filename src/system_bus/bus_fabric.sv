@@ -8,8 +8,8 @@ module bus_fabric #(
 )( 
   input logic clk_i,
   input logic rst_i,
-  bus_if.initiator core_if,
-  bus_if.target    target_ifs [NumTargets]
+  bus_if.target    core_if,               // TODO Check logic on opposing interfaces and document
+  bus_if.initiator target_ifs [NumTargets]
 );
 // Write buffer
   logic                   use_w_buf;  // TODO: FSM States?
@@ -63,7 +63,7 @@ module bus_fabric #(
   assign wr_sel_onehot = aw_hs_seen ? wr_sel_onehot_q : wr_sel_onehot_d;
   assign rd_sel_onehot = rd_inflight ? rd_sel_onehot_q : rd_sel_onehot_d;
 
-// One-hot sel / Seen flag logic
+// Latching logic
   always_ff @(posedge clk_i or posedge rst_i) begin
     if (rst_i) begin
       aw_hs_seen <= 1'b0;
@@ -127,39 +127,40 @@ module bus_fabric #(
   end
   
 
-    int i, k;
+// Bus generate block 
   genvar g;
   generate
     for (g = 0; g < NumTargets; g++) begin
-    // Forward routing
+  // Forward routing
       always_comb begin : target_demux
-      // Defaults
+    // Defaults
+      //Write handshakes
         w_direct_hs    = 0'b0;
         w_buf_drain_hs = 0'b0;
 
-        // Write channels
+      // Write channels
           // AW
-          target_ifs[g].aw_valid = 1'b0;
-          target_ifs[g].aw_addr  = '0;
-          // W
-          target_ifs[g].w_valid = 1'b0;
-          target_ifs[g].w_data  = '0;
-          target_ifs[g].w_strb  = '0;
-          // B
-          target_ifs[g].b_ready = 1'b0;
+        target_ifs[g].aw_valid = 1'b0;
+        target_ifs[g].aw_addr  = '0;
+        // W
+        target_ifs[g].w_valid = 1'b0;
+        target_ifs[g].w_data  = '0;
+        target_ifs[g].w_strb  = '0;
+        // B
+        target_ifs[g].b_ready = 1'b0;
 
-        // Read channels
-          // AR
-          target_ifs[g].ar_valid = 1'b0;
-          target_ifs[g].ar_addr  = '0;
-          // R
-          target_ifs[g].r_ready = 1'b0;
+      // Read channels
+        // AR
+        target_ifs[g].ar_valid = 1'b0;
+        target_ifs[g].ar_addr  = '0;
+        // R
+        target_ifs[g].r_ready = 1'b0;
 
-      // Routing
+    // Routing
       // Write channels
         if (wr_sel_onehot[g]) begin
         // AW
-          if (!aw_hs_seen) begin //*
+          if (!aw_hs_seen) begin
             target_ifs[g].aw_valid = core_if.aw_valid;
             target_ifs[g].aw_addr  = core_if.aw_addr;
           end 
@@ -202,61 +203,56 @@ module bus_fabric #(
           target_ifs[g].r_ready = core_if.r_ready;
         end
       end // end of target_demux
-    end
-  endgenerate
   
-// Backward routings
-  always_comb begin : initiator_mux
-  // Defaults
-    // Write channels
-    // AW
-    core_if.aw_ready = 1'b0;
-    // W
-    core_if.w_ready = 1'b0;
-    // B
-    core_if.b_valid = 1'b0;
-    core_if.b_resp = '0;
-
-    // Read channels
-    // AR
-    core_if.ar_ready = 1'b0;
-    // R
-    core_if.r_valid = 1'b0;
-    core_if.r_data = '0;
-    core_if.r_resp = '0;
-
-    if (use_w_buf) begin  // When AW has not been seen and buffer is not full
-      core_if.w_ready = 1'b1;
-
-    end else begin
-      for (int j = 0; j < NumTargets; j++) begin
+  // Backward routings
+      always_comb begin : initiator_mux
+    // Defaults
       // Write channels
-        if (wr_sel_onehot[j]) begin
         // AW
-          core_if.aw_ready = aw_hs_seen ? 1'b0 : target_ifs[j].aw_ready;
+        core_if.aw_ready = 1'b0;
+        // W
+        core_if.w_ready = 1'b0;
+        // B
+        core_if.b_valid = 1'b0;
+        core_if.b_resp = '0;
+
+      // Read channels
+        // AR
+        core_if.ar_ready = 1'b0;
+        // R
+        core_if.r_valid = 1'b0;
+        core_if.r_data = '0;
+        core_if.r_resp = '0;
+
+      // Write channels
+        if (use_w_buf) begin  // When AW has not been seen and buffer is not full
+          core_if.w_ready = 1'b1;
+          core_if.aw_ready = aw_hs_seen ? 1'b0 : target_ifs[g].aw_ready;
+
+        end else if (wr_sel_onehot[g]) begin
+        // AW
+          core_if.aw_ready = aw_hs_seen ? 1'b0 : target_ifs[g].aw_ready;
         // W
           if (!drain_w_buf) begin // Gating core's w_ready when draining Write buffer
-            core_if.w_ready = w_hs_seen ? 1'b0 : target_ifs[j].w_ready;
+            core_if.w_ready = w_hs_seen ? 1'b0 : target_ifs[g].w_ready;
           end
         // B
-          core_if.b_valid  = target_ifs[j].b_valid;
-          core_if.b_resp   = target_ifs[j].b_resp;
+          core_if.b_valid  = target_ifs[g].b_valid;
+          core_if.b_resp   = target_ifs[g].b_resp;
         end 
-      end
-    end
 
-  // Read channels
-    for (int j = 0; j < NumTargets; j++) begin
-      if (rd_sel_onehot[j]) begin
-      // AR
-        core_if.ar_ready = rd_inflight ? 1'b0 : target_ifs[j].ar_ready;
-      // R
-        core_if.r_valid = target_ifs[j].r_valid;
-        core_if.r_data = target_ifs[j].r_data;
-        core_if.r_resp = target_ifs[j].r_resp;
-      end
+      // Read channels
+        if (rd_sel_onehot[g]) begin
+        // AR
+          core_if.ar_ready = rd_inflight ? 1'b0 : target_ifs[g].ar_ready;
+        // R
+          core_if.r_valid = target_ifs[g].r_valid;
+          core_if.r_data = target_ifs[g].r_data;
+          core_if.r_resp = target_ifs[g].r_resp;
+        end
+      end // initiator_mux
     end
-  end
+  endgenerate
 
   bus_addr_decode #(
     .AddressWidth(AddressWidth),
