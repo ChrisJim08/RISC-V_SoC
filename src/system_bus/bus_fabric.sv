@@ -13,8 +13,9 @@ module bus_fabric #(
 );
   // Write buffer
 
-  logic                   use_w_buf;
+  logic                   use_w_buf;  // TODO: FSM?
   logic                   drain_w_buf;
+  // Write data (W) directly
   logic                   w_direct_hs;
   logic                   w_buf_fill_hs;
   logic                   w_buf_drain_hs;
@@ -26,11 +27,10 @@ module bus_fabric #(
 
   // Status flags
   logic aw_hs_seen, w_hs_seen; // w_hs_seen = target has accepted buffered write data (Write Data Target Handshake)
-  logic write_busy;
   logic wr_inflight, rd_inflight; // TODO add/remove any (!)inflight validation?
 
   // Handshake flags
-  logic aw_handshake, w_handshake, b_handshake, ar_handshake, r_handshake;
+  logic aw_handshake, b_handshake, ar_handshake, r_handshake;
 
   // One-hot select lines
   logic [NumTargets-1:0] wr_sel_onehot_d;
@@ -40,18 +40,12 @@ module bus_fabric #(
   logic [NumTargets-1:0] rd_sel_onehot_q;
   logic [NumTargets-1:0] rd_sel_onehot;
 
-// Handshake flag logic
+// Handshake flags
   // Write address (AW)
   assign aw_handshake = core_if.aw_valid && core_if.aw_ready;
-
-  // Write data (W)
-  assign w_handshake = core_if.w_ready && core_if.w_valid;
-
-  // Write data (W) directly
-  assign w_direct_hs = w_handshake && !use_w_buf;
   
   // Write data (W) fill buffer
-  assign w_buf_fill_hs = w_handshake && use_w_buf;
+  assign w_buf_fill_hs = core_if.w_ready && core_if.w_valid && use_w_buf;
 
   // Write response (B)
   assign b_handshake = core_if.b_ready && core_if.b_valid;
@@ -62,11 +56,16 @@ module bus_fabric #(
   // Read data (R)
   assign r_handshake = core_if.r_ready && core_if.r_valid;
 
-// Write Data (W) before Address (AW) flags
-  assign use_w_buf = core_if.w_valid && !aw_hs_seen && !w_hs_seen && !buff_full;
+// In-flight flag
+  assign wr_inflight = aw_hs_seen && w_hs_seen;
 
+// Write Data (W) buffer flags
+  assign use_w_buf = core_if.w_valid && !aw_hs_seen && !w_hs_seen && !buff_full && !core_if.aw_valid;
   assign drain_w_buf = buff_full && aw_hs_seen;
 
+  // Latched selection while transaction is in-flight                     // Redundant?
+  assign wr_sel_onehot = aw_hs_seen ? wr_sel_onehot_q : wr_sel_onehot_d;
+  assign rd_sel_onehot = rd_inflight ? rd_sel_onehot_q : rd_sel_onehot_d;
 
 // One-hot sel / Seen flag logic
   always_ff @(posedge clk_i or posedge rst_i) begin
@@ -95,15 +94,15 @@ module bus_fabric #(
           buff_full  <= 1'b1;
         end
 
-        if (w_direct_hs || w_buf_drain_hs) begin
-          w_hs_seen <= 1'b1;
+        if (w_buf_drain_hs) begin
+          w_hs_seen   <= 1'b1;
+          buff_w_data <= '0;
+          buff_w_strb <= '0;
+          buff_full   <= 1'b0;
+        end
 
-          if (drain_w_buf) begin
-            buff_w_data <= '0;
-            buff_w_strb <= '0;
-            buff_full   <= 1'b0;
-            drain_w_buf <= 1'b0;
-          end
+        if (w_direct_hs) begin
+          w_hs_seen <= 1'b1;
         end
 
       end
@@ -128,16 +127,12 @@ module bus_fabric #(
     end
   end
   
-  // Use latched selection while transaction is in-flight                 // Redundant?
-  assign wr_sel_onehot = aw_hs_seen ? wr_sel_onehot_q : wr_sel_onehot_d;
-  assign rd_sel_onehot = rd_inflight ? rd_sel_onehot_q : rd_sel_onehot_d;
 
-// In-flight / Busy flag logic
-  assign wr_inflight = aw_hs_seen && w_hs_seen;
 
 // Forward routing
   always_comb begin : target_demux
   // Defaults
+    w_direct_hs    = 0'b0;
     w_buf_drain_hs = 0'b0;
 
     for (int i = 0; i < NumTargets; i++) begin
@@ -164,32 +159,37 @@ module bus_fabric #(
     for (int i = 0; i < NumTargets; i++) begin 
     // Write channels
       if (wr_sel_onehot[i]) begin
-      // Write buffer handshake
-        w_buf_drain_hs = target_ifs[i].w_ready&& !w_hs_seen && drain_w_buf;
-
       // AW
         if (!aw_hs_seen) begin //*
           target_ifs[i].aw_valid = core_if.aw_valid;
           target_ifs[i].aw_addr  = core_if.aw_addr;
-        end
+        end 
+        OR();
 
       // W
         if (!w_hs_seen) begin
-          if (buff_full && aw_seen) begin // redundant aw_seen? (since wr_sel_onehot isn't chosen until aw is seen) 
+          if (drain_w_buf) begin 
             target_ifs[i].w_valid = 1'b1; 
             target_ifs[i].w_data  = buff_w_data;  
             target_ifs[i].w_strb  = buff_w_strb;  
-          end else begin
+          end else if (!use_w_buf) begin
             target_ifs[i].w_valid = core_if.w_valid;
             target_ifs[i].w_data  = core_if.w_data; 
             target_ifs[i].w_strb  = core_if.w_strb; 
           end
         end
-
+      
       // B
         if (wr_inflight) begin
           target_ifs[i].b_ready = core_if.b_ready;
         end
+
+      // Handshakes
+        // Direct handshake (Initiator <-> Target)
+        w_direct_hs = core_if.w_valid && target_ifs[i].w_ready && !drain_w_buf; 
+        // Buffer drain handshake (Fabric <-> Target)
+        w_buf_drain_hs = target_ifs[i].w_valid && target_ifs[i].w_ready && drain_w_buf;
+
       end
 
        
@@ -237,7 +237,9 @@ module bus_fabric #(
         // AW
           core_if.aw_ready = aw_hs_seen ? 1'b0 : target_ifs[j].aw_ready;
         // W
-          core_if.w_ready = w_hs_seen ? 1'b0 : target_ifs[j].w_ready;
+          if (!drain_w_buf) begin // Gating core's w_ready when draining Write buffer
+            core_if.w_ready = w_hs_seen ? 1'b0 : target_ifs[j].w_ready;
+          end
         // B
           core_if.b_valid  = target_ifs[j].b_valid;
           core_if.b_resp   = target_ifs[j].b_resp;
