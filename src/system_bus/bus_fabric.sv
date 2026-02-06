@@ -11,14 +11,9 @@ module bus_fabric #(
   bus_if.initiator core_if,
   bus_if.target    target_ifs [NumTargets]
 );
-  // Write buffer
-
-  logic                   use_w_buf;  // TODO: FSM?
+// Write buffer
+  logic                   use_w_buf;  // TODO: FSM States?
   logic                   drain_w_buf;
-  // Write data (W) directly
-  logic                   w_direct_hs;
-  logic                   w_buf_fill_hs;
-  logic                   w_buf_drain_hs;
   logic                   buff_full;
   logic [DataWidth-1:0]   buff_w_data;
   logic [StrobeWidth-1:0] buff_w_strb;
@@ -26,11 +21,12 @@ module bus_fabric #(
 // Internal Signals
 
   // Status flags
-  logic aw_hs_seen, w_hs_seen; // w_hs_seen = target has accepted buffered write data (Write Data Target Handshake)
-  logic wr_inflight, rd_inflight; // TODO add/remove any (!)inflight validation?
+  logic aw_hs_seen, w_hs_seen; 
+  logic wr_inflight, rd_inflight;
 
   // Handshake flags
   logic aw_handshake, b_handshake, ar_handshake, r_handshake;
+  logic w_direct_hs, w_buf_fill_hs, w_buf_drain_hs;
 
   // One-hot select lines
   logic [NumTargets-1:0] wr_sel_onehot_d;
@@ -60,10 +56,10 @@ module bus_fabric #(
   assign wr_inflight = aw_hs_seen && w_hs_seen;
 
 // Write Data (W) buffer flags
-  assign use_w_buf = core_if.w_valid && !aw_hs_seen && !w_hs_seen && !buff_full && !core_if.aw_valid;
+  assign use_w_buf = core_if.w_valid && !aw_hs_seen && !w_hs_seen && !buff_full && !core_if.aw_valid; // Schronous AW/W support
   assign drain_w_buf = buff_full && aw_hs_seen;
 
-  // Latched selection while transaction is in-flight                     // Redundant?
+// Latched selection while transaction is in-flight                     // Redundant?
   assign wr_sel_onehot = aw_hs_seen ? wr_sel_onehot_q : wr_sel_onehot_d;
   assign rd_sel_onehot = rd_inflight ? rd_sel_onehot_q : rd_sel_onehot_d;
 
@@ -81,19 +77,21 @@ module bus_fabric #(
       buff_full  <= 1'b0;
 
     end else begin
-      if (aw_handshake && !aw_hs_seen) begin // Redundant !aw_hs_seen?
+      if (aw_handshake && !aw_hs_seen) begin
         aw_hs_seen <= 1'b1; 
                 
         wr_sel_onehot_q <= wr_sel_onehot_d;
       end
 
       if (!w_hs_seen) begin 
+
         if (w_buf_fill_hs) begin
           buff_w_data  <= core_if.w_data;
           buff_w_strb  <= core_if.w_strb;
           buff_full  <= 1'b1;
         end
 
+      // Target accepted buffered write data 
         if (w_buf_drain_hs) begin
           w_hs_seen   <= 1'b1;
           buff_w_data <= '0;
@@ -101,6 +99,7 @@ module bus_fabric #(
           buff_full   <= 1'b0;
         end
 
+      // Target accepted write data from Initator 
         if (w_direct_hs) begin
           w_hs_seen <= 1'b1;
         end
@@ -186,9 +185,9 @@ module bus_fabric #(
 
       // Handshakes
         // Direct handshake (Initiator <-> Target)
-        w_direct_hs = core_if.w_valid && target_ifs[i].w_ready && !drain_w_buf; 
+        w_direct_hs |= target_ifs[i].w_valid && target_ifs[i].w_ready && !drain_w_buf; 
         // Buffer drain handshake (Fabric <-> Target)
-        w_buf_drain_hs = target_ifs[i].w_valid && target_ifs[i].w_ready && drain_w_buf;
+        w_buf_drain_hs |= target_ifs[i].w_valid && target_ifs[i].w_ready && drain_w_buf;
 
       end
 
