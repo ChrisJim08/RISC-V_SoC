@@ -8,8 +8,8 @@ module bus_fabric #(
 )( 
   input logic clk_i,
   input logic rst_i,
-  bus_if.target    core_if,               // TODO Check logic on opposing interfaces and document
-  bus_if.initiator target_ifs [NumTargets]
+  bus_if core_if,               // TODO Check logic on need 
+  bus_if target_ifs [NumTargets]
 );
 // Write buffer
   logic                   use_w_buf;  // TODO: FSM States?
@@ -19,7 +19,6 @@ module bus_fabric #(
   logic [StrobeWidth-1:0] buff_w_strb;
 
 // Internal Signals
-
   // Status flags
   logic aw_hs_seen, w_hs_seen; 
   logic wr_inflight, rd_inflight;

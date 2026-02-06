@@ -23,38 +23,40 @@ module riscv_soc #(
 );
 
 // Core's bus interface
-  bus_if.initiator core_if;
+  bus_if core_if();
 
 // Array of bus target interfaces
-  bus_if.target target_ifs [NumTargets];
+  bus_if target_ifs[NumTargets]();
 
 // Bus fabric
   bus_fabric #(
     .AddressWidth(AddressWidth),
     .DataWidth(DataWidth),
     .NumTargets(NumTargets)
-  ) bus_fabric ( 
+  ) bus_fabric (
+    .clk_i(clk_i),
+    .rst_i(rst_i),
     .core_if(core_if),
-    .s_if(target_ifs)
+    .target_ifs(target_ifs)
   );
 
 // Core's bus adapter TODO
 
 // SoC core
-  riscv_core #(
-    .AddressWidth(AddressWidth),
-    .DataWidth(DataWidth)
-  ) riscv_core (
-    .clk_i(clk_i),
-    .rst_i(rst_i),
-    .instr_i(instr_i),
-    .imem_addr_o(core_imem_addr_o),
-    .dmem_r_data_i(dmem_r_data_i),
-    .dmem_wr_en_o(dmem_wr_en_o),
-    .dmem_addr_o(dmem_addr_o),
-    .dmem_wr_data_o(dmem_wr_data_o),
-    .halt_o(halt_o)
-  );
+  //riscv_core #(
+  //  .AddressWidth(AddressWidth),
+  //  .DataWidth(DataWidth)
+  //) riscv_core (
+  //  .clk_i(clk_i),
+  //  .rst_i(rst_i),
+  //  .instr_i(instr_i),
+  //  .imem_addr_o(core_imem_addr_o),
+  //  .dmem_r_data_i(dmem_r_data_i),
+  //  .dmem_wr_en_o(dmem_wr_en_o),
+  //  .dmem_addr_o(dmem_addr_o),
+  //  .dmem_wr_data_o(dmem_wr_data_o),
+  //  .halt_o(halt_o)
+  //);
 
 // dmem's (RAM) bus adapter TODO
 
