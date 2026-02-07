@@ -77,6 +77,46 @@ interface bus_if #(
            r_resp
   );
 
+  modport fabric_to_target (
+    input aw_ready, 
+          w_ready, 
+          b_valid, 
+          b_resp, 
+          ar_ready, 
+          r_valid, 
+          r_data, 
+          r_resp,
+    output aw_valid, 
+           aw_addr, 
+           w_valid, 
+           w_data, 
+           w_strb, 
+           b_ready, 
+           ar_valid, 
+           ar_addr, 
+           r_ready
+  );
+
+  modport fabric_to_initiator (
+    input aw_valid, 
+          aw_addr, 
+          w_valid, 
+          w_data, 
+          w_strb, 
+          b_ready, 
+          ar_valid, 
+          ar_addr, 
+          r_ready,
+    output aw_ready, 
+           w_ready, 
+           b_valid, 
+           b_resp,
+           ar_ready, 
+           r_valid, 
+           r_data, 
+           r_resp
+  );
+  
   generate
     if (DataWidth % 8 != 0) begin: datawidth_error
       initial begin

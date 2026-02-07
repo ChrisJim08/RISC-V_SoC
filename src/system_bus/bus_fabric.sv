@@ -8,8 +8,8 @@ module bus_fabric #(
 )( 
   input logic clk_i,
   input logic rst_i,
-  bus_if core_if,               // TODO Check logic on need 
-  bus_if target_ifs [NumTargets]
+  bus_if.fabric_to_initiator core_if,               // TODO Check logic on need 
+  bus_if.fabric_to_target    target_ifs [NumTargets]
 );
 // Write buffer
   logic                   use_w_buf;  // TODO: FSM States?
