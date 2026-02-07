@@ -4,3 +4,4 @@ __pycache__/
 .vscode/
 sim/sim_build/
 sim/results.xml
+obj_dir/
