@@ -8,15 +8,19 @@ module bus_fabric #(
 )( 
   input logic clk_i,
   input logic rst_i,
-  bus_if.fabric_to_initiator core_if,               // TODO Check logic on need 
+  bus_if.fabric_to_initiator core_if,
   bus_if.fabric_to_target    target_ifs [NumTargets]
 );
 // Write buffer
-  logic                   use_w_buf;  // TODO: FSM States?
-  logic                   drain_w_buf;
-  logic                   buff_full;
-  logic [DataWidth-1:0]   buff_w_data;
-  logic [StrobeWidth-1:0] buff_w_strb;
+  logic skid_full;
+  logic skid_ready;
+  logic [DataWidth-1:0]   skid_data;
+  logic [StrobeWidth-1:0] skid_strb;
+  //logic                   use_w_buf;  // TODO: FSM States?
+  //logic                   drain_w_buf;
+  //logic                   buff_full;
+  //logic [DataWidth-1:0]   buff_w_data;
+  //logic [StrobeWidth-1:0] buff_w_strb;
 
 // Internal Signals
   // Status flags
@@ -71,10 +75,11 @@ module bus_fabric #(
       wr_sel_onehot_q <= '0;
       rd_sel_onehot_q <= '0;
 
-      buff_w_data  <= '0;
-      buff_w_strb  <= '0;
-      buff_full  <= 1'b0;
+      skid_data <= '0;
+      skid_strb <= '0;
+      skid_full <= 1'b0;
 
+      skid_target <= 0;
     end else begin
       if (aw_handshake && !aw_hs_seen) begin
         aw_hs_seen <= 1'b1; 
@@ -82,28 +87,26 @@ module bus_fabric #(
         wr_sel_onehot_q <= wr_sel_onehot_d;
       end
 
-      if (!w_hs_seen) begin 
 
-        if (w_buf_fill_hs) begin
-          buff_w_data  <= core_if.w_data;
-          buff_w_strb  <= core_if.w_strb;
-          buff_full  <= 1'b1;
-        end
-
-      // Target accepted buffered write data 
-        if (w_buf_drain_hs) begin
-          w_hs_seen   <= 1'b1;
-          buff_w_data <= '0;
-          buff_w_strb <= '0;
-          buff_full   <= 1'b0;
-        end
-
-      // Target accepted write data from Initator 
-        if (w_direct_hs) begin
-          w_hs_seen <= 1'b1;
-        end
-
+      if (core_if.w_valid && !target_ifs_w_ready && !skid_full) begin
+        skid_data  <= core_if.w_data;
+        skid_strb  <= core_if.w_strb;
+        skid_full  <= 1'b1;
       end
+
+    // Target accepted buffered write data 
+      if (w_buf_drain_hs) begin
+        w_hs_seen   <= 1'b1;
+        buff_w_data <= '0;
+        buff_w_strb <= '0;
+        buff_full   <= 1'b0;
+      end
+
+    // Target accepted write data from Initator 
+      if (w_direct_hs) begin
+        w_hs_seen <= 1'b1;
+      end
+
       
       if (b_handshake && wr_inflight) begin
         aw_hs_seen <= 1'b0;
@@ -159,41 +162,31 @@ module bus_fabric #(
       // Write channels
         if (wr_sel_onehot[g]) begin
         // AW
-          if (!aw_hs_seen) begin
             target_ifs[g].aw_valid = core_if.aw_valid;
             target_ifs[g].aw_addr  = core_if.aw_addr;
-          end 
 
         // W
-          if (!w_hs_seen) begin
-            if (drain_w_buf) begin 
-              target_ifs[g].w_valid = 1'b1; 
-              target_ifs[g].w_data  = buff_w_data;  
-              target_ifs[g].w_strb  = buff_w_strb;  
-            end else if (!use_w_buf) begin
-              target_ifs[g].w_valid = core_if.w_valid;
-              target_ifs[g].w_data  = core_if.w_data; 
-              target_ifs[g].w_strb  = core_if.w_strb; 
-            end
+          if (skid_full) begin 
+            target_ifs[g].w_valid = 1'b1; 
+            target_ifs[g].w_data  = skid_data;  
+            target_ifs[g].w_strb  = skid_strb;  
+          end else begin
+            target_ifs[g].w_valid = core_if.w_valid;
+            target_ifs[g].w_data  = core_if.w_data; 
+            target_ifs[g].w_strb  = core_if.w_strb; 
           end
         
         // B
-          if (wr_inflight) begin
+          if (wr_inflight) begin                              // inflight needed?
             target_ifs[g].b_ready = core_if.b_ready;
           end
-
-        // Handshakes
-          // Direct handshake (Initiator <-> Target)
-          w_direct_hs |= target_ifs[g].w_valid && target_ifs[g].w_ready && !drain_w_buf;  // TODO Need fix after generate?
-          // Buffer drain handshake (Fabric <-> Target)
-          w_buf_drain_hs |= target_ifs[g].w_valid && target_ifs[g].w_ready && drain_w_buf;
         end
+        
 
-          
       // Read channels
         if (rd_sel_onehot[g]) begin
         // AR
-          if (!rd_inflight) begin //*
+          if (!rd_inflight) begin 
             target_ifs[g].ar_valid = core_if.ar_valid;
             target_ifs[g].ar_addr  = core_if.ar_addr;
           end
@@ -224,17 +217,13 @@ module bus_fabric #(
         core_if.r_resp = '0;
 
       // Write channels
-        if (use_w_buf) begin  // When AW has not been seen and buffer is not full
-          core_if.w_ready = 1'b1;
-          core_if.aw_ready = aw_hs_seen ? 1'b0 : target_ifs[g].aw_ready;
 
-        end else if (wr_sel_onehot[g]) begin
+        // W      
+        core_if.w_ready = wr_sel_onehot[g] ? target_ifs[g].w_ready : !skid_full;   // && !w_hs_seen?
+        target_ifs_w_ready = wr_sel_onehot[g] ? target_ifs[g].w_ready : 1'b0;
+        if (wr_sel_onehot[g]) begin
         // AW
-          core_if.aw_ready = aw_hs_seen ? 1'b0 : target_ifs[g].aw_ready;
-        // W
-          if (!drain_w_buf) begin // Gating core's w_ready when draining Write buffer
-            core_if.w_ready = w_hs_seen ? 1'b0 : target_ifs[g].w_ready;
-          end
+          core_if.aw_ready = aw_hs_seen ? 1'b0 : target_ifs[g].aw_ready; // Redundant aw_hs_seen?
         // B
           core_if.b_valid  = target_ifs[g].b_valid;
           core_if.b_resp   = target_ifs[g].b_resp;
