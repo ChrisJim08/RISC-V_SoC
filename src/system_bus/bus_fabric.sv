@@ -4,7 +4,7 @@ module bus_fabric #(
   parameter int unsigned  AddressWidth = 32,
   parameter int unsigned  DataWidth    = 32,
   localparam int unsigned StrobeWidth  = DataWidth / 8,
-  parameter int unsigned  NumTargets   = 2
+  localparam int unsigned NumTargets   = 2
 )( 
   input logic clk_i,
   input logic rst_i,
@@ -18,9 +18,23 @@ module bus_fabric #(
   logic [DataWidth-1:0]   skid_data;
   logic [StrobeWidth-1:0] skid_strb;
 
+// Routing arrays
+  logic [NumTargets-1:0] aw_ready_from_tgt;
+  logic [NumTargets-1:0] w_ready_from_tgt;
+  logic [NumTargets-1:0] w_valid_from_tgt;
+  logic [NumTargets-1:0] b_valid_from_tgt;
+  logic [NumTargets-1:0][1:0] b_resp_from_tgt;
+
+  logic [NumTargets-1:0] ar_ready_from_tgt;
+  logic [NumTargets-1:0] r_valid_from_tgt;
+  logic [NumTargets-1:0][DataWidth-1:0] r_data_from_tgt;
+  logic [NumTargets-1:0][1:0] r_resp_from_tgt;
+
+// Routing signals
   logic target_if_aw_ready;
   logic target_if_w_ready;
   logic target_if_w_valid;
+
 // Internal Signals
   // Status flags
   logic aw_hs_seen, w_hs_seen; 
@@ -28,7 +42,6 @@ module bus_fabric #(
 
   // Handshake flags
   logic aw_handshake, b_handshake, ar_handshake, r_handshake;
-  logic w_direct_hs, w_buf_fill_hs, w_buf_drain_hs;
 
   // One-hot select lines
   logic [NumTargets-1:0] wr_sel_onehot_d;
@@ -40,7 +53,7 @@ module bus_fabric #(
 
 // Handshake flags
   // Write address (AW)                                               // TODO change all handshake signals to use
-  assign aw_handshake = core_if.aw_valid && core_if.aw_ready;          // core_if.* && target_if_*;
+  assign aw_handshake = core_if.aw_valid && core_if.aw_ready;          // core_if.* && target_if_*; (target_if_aw_ready)
                                                                       // one signal from each (target and core)?
   // Write response (B)
   assign b_handshake = core_if.b_ready && core_if.b_valid;           
@@ -79,8 +92,8 @@ module bus_fabric #(
         wr_sel_onehot_q <= wr_sel_onehot_d;
       end
 
-    // Buffer logic, if space, when target is not ready
-      if (core_if.w_valid && !target_if_w_ready && skid_w_ready) begin
+    // Buffer logic if space, when target is not ready
+      if (core_if.w_valid && core_if.w_ready && !target_if_w_ready) begin // skid_ready???
         skid_data  <= core_if.w_data;
         skid_strb  <= core_if.w_strb;
         skid_full  <= 1'b1;
@@ -88,10 +101,10 @@ module bus_fabric #(
 
     // Target accepted write data 
       if (target_if_w_valid && target_if_w_ready) begin         // TODO Review logic (w_handshake?)
-        w_hs_seen   <= 1'b1;
-        buff_w_data <= '0;
-        buff_w_strb <= '0;
-        buff_full   <= 1'b0;
+        w_hs_seen <= 1'b1;
+        skid_data <= '0;
+        skid_strb <= '0;
+        skid_full <= 1'b0;
       end
 
       if (b_handshake && wr_inflight) begin
@@ -174,52 +187,64 @@ module bus_fabric #(
           target_ifs[g].r_ready = core_if.r_ready;
         end
       end // end of target_demux
-  
-  // Backward routings
-      always_comb begin : initiator_mux
-    // Defaults
-      // Write channels
-        // AW
-        core_if.aw_ready = 1'b0;          
-        // W
-        core_if.w_ready = 1'b0;                 // TODO Defaults needed?
-        // B
-        core_if.b_valid = 1'b0;
-        core_if.b_resp = '0;
 
-      // Read channels
-        // AR
-        core_if.ar_ready = 1'b0;
-        // R
-        core_if.r_valid = 1'b0;
-        core_if.r_data = '0;
-        core_if.r_resp = '0;
+    // Array routing logic
+      assign aw_ready_from_tgt[g] = target_ifs[g].aw_ready;
+      assign w_ready_from_tgt[g]  = target_ifs[g].w_ready;
+      assign w_valid_from_tgt[g]  = target_ifs[g].w_valid;
+      assign b_valid_from_tgt[g]  = target_ifs[g].b_valid;
+      assign b_resp_from_tgt[g]   = target_ifs[g].b_resp;
 
-      // Write channels
-        // W      
-        target_if_aw_ready = wr_sel_onehot[g] ? target_ifs[g].aw_ready : 1'b0;
-        target_if_w_ready  = wr_sel_onehot[g] ? target_ifs[g].w_ready : 1'b0;
-        core_if.w_ready     = wr_sel_onehot[g] ? target_ifs[g].w_ready : skid_w_ready; 
-        if (wr_sel_onehot[g]) begin
-        // AW
-          core_if.aw_ready = target_ifs[g].aw_ready;
-        // B
-          core_if.b_valid  = target_ifs[g].b_valid;
-          core_if.b_resp   = target_ifs[g].b_resp;
-        end 
+      assign ar_ready_from_tgt[g] = target_ifs[g].ar_ready;
+      assign r_valid_from_tgt[g]  = target_ifs[g].r_valid;
+      assign r_data_from_tgt[g]   = target_ifs[g].r_data;
+      assign r_resp_from_tgt[g]   = target_ifs[g].r_resp;
 
-      // Read channels
-        if (rd_sel_onehot[g]) begin
-        // AR
-          core_if.ar_ready = rd_inflight ? 1'b0 : target_ifs[g].ar_ready;
-        // R
-          core_if.r_valid = target_ifs[g].r_valid;
-          core_if.r_data = target_ifs[g].r_data;
-          core_if.r_resp = target_ifs[g].r_resp;
-        end
-      end // initiator_mux
     end
   endgenerate
+  
+// Backward routings
+  always_comb begin : initiator_mux
+  // Defaults
+    core_if.aw_ready = 1'b0;  
+    core_if.w_ready = 1'b0;
+    core_if.b_valid = 1'b0;
+    core_if.b_resp = '0;
+
+    core_if.ar_ready = 1'b0;
+    core_if.r_valid = 1'b0;
+    core_if.r_data = '0;
+    core_if.r_resp = '0;
+  
+  // Routing
+    for (int i = 0; i < NumTargets; i++) begin
+    // Write channels
+      // W      
+      target_if_aw_ready = wr_sel_onehot[i] ? aw_ready_from_tgt[i] : 1'b0;
+      target_if_w_ready  = wr_sel_onehot[i] ? w_ready_from_tgt[i]  : 1'b0;
+      target_if_w_valid  = wr_sel_onehot[i] ? w_valid_from_tgt[i]  : 1'b0;
+      
+      core_if.w_ready    = wr_sel_onehot[i] ? w_ready_from_tgt[i]  : skid_w_ready; 
+
+      if (wr_sel_onehot[i]) begin
+      // AW
+        core_if.aw_ready = aw_ready_from_tgt[i];
+      // B
+        core_if.b_valid  = b_valid_from_tgt[i];
+        core_if.b_resp   = b_resp_from_tgt[i];
+      end 
+
+    // Read channels
+      if (rd_sel_onehot[i]) begin
+      // AR
+        core_if.ar_ready = rd_inflight ? 1'b0 : ar_ready_from_tgt[i];
+      // R
+        core_if.r_valid = r_valid_from_tgt[i];
+        core_if.r_data = r_data_from_tgt[i];
+        core_if.r_resp = r_resp_from_tgt[i];
+      end
+    end
+  end // initiator_mux
 
   bus_addr_decode #(
     .AddressWidth(AddressWidth),
