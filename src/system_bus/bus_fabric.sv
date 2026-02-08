@@ -93,7 +93,7 @@ module bus_fabric #(
       end
 
     // Buffer logic if space, when target is not ready
-      if (core_if.w_valid && core_if.w_ready && !target_if_w_ready) begin // skid_ready???
+      if (core_if.w_valid && core_if.w_ready && !target_if_w_ready) begin // && skid_ready???
         skid_data  <= core_if.w_data;
         skid_strb  <= core_if.w_strb;
         skid_full  <= 1'b1;
@@ -199,7 +199,6 @@ module bus_fabric #(
       assign r_valid_from_tgt[g]  = target_ifs[g].r_valid;
       assign r_data_from_tgt[g]   = target_ifs[g].r_data;
       assign r_resp_from_tgt[g]   = target_ifs[g].r_resp;
-
     end
   endgenerate
   
@@ -207,7 +206,7 @@ module bus_fabric #(
   always_comb begin : initiator_mux
   // Defaults
     core_if.aw_ready = 1'b0;  
-    core_if.w_ready = 1'b0;
+    core_if.w_ready = skid_w_ready;
     core_if.b_valid = 1'b0;
     core_if.b_resp = '0;
 
@@ -223,10 +222,10 @@ module bus_fabric #(
       target_if_aw_ready = wr_sel_onehot[i] ? aw_ready_from_tgt[i] : 1'b0;
       target_if_w_ready  = wr_sel_onehot[i] ? w_ready_from_tgt[i]  : 1'b0;
       target_if_w_valid  = wr_sel_onehot[i] ? w_valid_from_tgt[i]  : 1'b0;
-      
-      core_if.w_ready    = wr_sel_onehot[i] ? w_ready_from_tgt[i]  : skid_w_ready; 
 
       if (wr_sel_onehot[i]) begin
+      // W
+        core_if.w_ready = w_ready_from_tgt[i];
       // AW
         core_if.aw_ready = aw_ready_from_tgt[i];
       // B

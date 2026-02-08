@@ -3,5 +3,6 @@ __pycache__/
 *.log
 .vscode/
 sim/sim_build/
+sim/wrappers/
 sim/results.xml
 obj_dir/

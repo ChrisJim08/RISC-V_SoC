@@ -3,29 +3,34 @@
 # defaults
 SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
-VERILOG_SOURCES ?= $(shell find $(PWD)/../src -name "*.sv" -o -name "*.svh")
-VERILOG_INCLUDE_DIRS += $(PWD)/../src/uart
+# Put packages first, then everything else
+PKG_SOURCES = \
+  $(PWD)/../src/system_bus/memmap_pkg.sv
+
+IF_SOURCES = \
+  $(PWD)/../src/system_bus/bus_if.sv
+
+ALL_SOURCES = $(shell find $(PWD)/../src/system_bus -name "*.sv" -o -name "*.svh")
+
+VERILOG_SOURCES = \
+  $(PKG_SOURCES) \
+  $(IF_SOURCES) \
+  $(filter-out $(PKG_SOURCES) $(IF_SOURCES), $(ALL_SOURCES)) \
+	$(PWD)/../sim/wrappers/bus_fabric_top.sv
+
+VERILOG_INCLUDE_DIRS += $(PWD)/../src/system_bus
 export PYTHONPATH := $(PWD)/..:$(PYTHONPATH)
 
 # Make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim
 
 # Define specific targets for different modules
-.PHONY: test_fifo test_uart
+.PHONY: test_bus																	// TODO Needed?
 
 cleanbuild:
 	rm -rf sim_build
 
-test_fifo:
-	$(MAKE) COCOTB_TOPLEVEL=fifo COCOTB_TEST_MODULES=tests.test_fifo
-
-test_uart_rx:
-	$(MAKE) COCOTB_TOPLEVEL=uart_rx COCOTB_TEST_MODULES=tests.test_uart_rx
-
-test_uart_tx:
-	$(MAKE) COCOTB_TOPLEVEL=uart_tx COCOTB_TEST_MODULES=tests.test_uart_tx
-
-test_uart:
-	$(MAKE) COCOTB_TOPLEVEL=uart_ctrl COCOTB_TEST_MODULES=tests.test_uart
+test_bus:
+	$(MAKE) COCOTB_TOPLEVEL=bus_fabric_top COCOTB_TEST_MODULES=tb.tests.functional.test_bus
 
 
