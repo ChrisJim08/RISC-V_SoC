@@ -19,7 +19,7 @@
 //
 //////////////////////////////////////////////////////////////////////////////////
 
-module mem #(
+module mem #(                       // Add synchronous read and byte-enabled TODO
   parameter AddressWidth = 10,
   parameter DataWidth    = 32
 ) (
