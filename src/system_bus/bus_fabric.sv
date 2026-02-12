@@ -196,7 +196,7 @@ module bus_fabric #(
     end
   endgenerate
   
-// Backward routings
+// Backward routing
   always_comb begin : initiator_mux
   // Defaults
     core_if.aw_ready = 1'b0;  
