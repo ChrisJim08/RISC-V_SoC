@@ -3,7 +3,7 @@
 module riscv_soc #(
   parameter int unsigned AddressWidth = 32,
   parameter int unsigned DataWidth    = 32,
-  parameter int unsigned NumTargets   = 2
+  localparam int unsigned NumTargets   = 2
 )(
   input  logic                    clk_i,
   input  logic                    rst_i, 
