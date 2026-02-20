@@ -1,23 +1,5 @@
-`timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: Self-employed
-// Engineer: Chris Jimenez
-//
-// Create Date: 12/12/2024
-// Design Name:
-// Module Name: mem
-// Project Name: RISC-V Soc
-// Target Devices:
-// Tool Versions:
-// Description:
-// 
-// Dependencies:
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//
-//////////////////////////////////////////////////////////////////////////////////
+//  Module: mem
+//  
 
 module mem #(
   parameter  int unsigned AddressWidth = 32,

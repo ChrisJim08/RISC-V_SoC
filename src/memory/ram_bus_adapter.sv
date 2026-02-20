@@ -1,4 +1,6 @@
-// Bus adapter enabling my mem block to interface with the bus
+//  Module: ram_bus_adapter
+//  Bus adapter enabling my mem block to interface with the bus
+
 module ram_bus_adapter #(
   parameter DataWidth    = 32,
   parameter AddressWidth = 32
