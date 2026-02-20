@@ -18,7 +18,6 @@ async def reset(dut):
     cocotb.log.info("Reset complete")
 
 
-
 async def bus_write(dut, addr, strb, data):
     cocotb.log.info(f"WRITE addr=0x{addr:08X} data=0x{data:08X}")
 # Address
@@ -86,6 +85,7 @@ async def bus_read(dut, addr):
     
     return data
 
+
 @cocotb.test()
 async def test_basic_randomized(dut):
     cocotb.log.info("Starting bus_fabric basic randomized test")
@@ -106,6 +106,7 @@ async def test_basic_randomized(dut):
     for addr, expected_data in scoreboard.items():
         actual_data = await bus_read(dut, addr)
         assert actual_data == expected_data, f"Mismatch at {hex(addr)}"
+     
         
 @cocotb.test()
 async def test_w_before_aw(dut):
@@ -155,17 +156,8 @@ async def test_w_before_aw(dut):
     dut.core_if.b_ready.value = 0
     await RisingEdge(dut.clk_i)
 
-    
-# Memory check
-#    cocotb.log.info(f"sel_target_if.w_ready = {dut.fabric.sel_target_if_w_ready.value}")
-#    cocotb.log.info(f"skid_data = {int(dut.fabric.skid_data.value):08X}")
-#    await RisingEdge(dut.clk_i)
-#    cocotb.log.info(f"skid_data = {int(dut.fabric.skid_data.value):08X}")
-#    await RisingEdge(dut.clk_i)
-#    cocotb.log.info(f"skid_data = {int(dut.fabric.skid_data.value):08X}")
-    
 # -- Read --
-    
     actual_data = await bus_read(dut, addr)
-# Read
+    
+# -- Assertion --
     assert actual_data == data, f"Mismatch at {hex(addr)}"
