@@ -65,7 +65,8 @@ module bus_fabric_top #(
   // Instantiate fabric
   bus_fabric #(
     .AddressWidth(AddressWidth),
-    .DataWidth(DataWidth)
+    .DataWidth(DataWidth),
+    .NumTargets(NumTargets)
   ) fabric (
     .clk_i(clk_i),
     .rst_i(rst_i),
@@ -74,7 +75,7 @@ module bus_fabric_top #(
   );
 
   logic                    mem_wr_en;
-  logic [NumBytes-1:0]     mem_byte_en;
+  logic [StrobeWidth-1:0]  mem_byte_en;
   logic [AddressWidth-1:0] mem_addr;
   logic [DataWidth-1:0]    mem_wr_data;
   logic [DataWidth-1:0]    mem_r_data;

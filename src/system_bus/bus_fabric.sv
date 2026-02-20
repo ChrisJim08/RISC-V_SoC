@@ -138,10 +138,15 @@ module bus_fabric #(
   end
 
 // Side routing for handshake logic using an array (Verilator workaround)
+  // Implemented using OR reduction
   always_comb begin
+    sel_target_if_w_valid = 1'b0;
+    sel_target_if_w_ready = 1'b0;
+
+
     for (int i = 0; i < NumTargets; i++) begin
-      sel_target_if_w_valid  = wr_sel_onehot[i] ? w_valid_from_tgt[i]  : 1'b0;
-      sel_target_if_w_ready  = wr_sel_onehot[i] ? w_ready_from_tgt[i]  : 1'b0;
+      sel_target_if_w_valid |= (wr_sel_onehot[i] & w_valid_from_tgt[i]);
+      sel_target_if_w_ready |= (wr_sel_onehot[i] & w_ready_from_tgt[i]);
     end
   end
 
