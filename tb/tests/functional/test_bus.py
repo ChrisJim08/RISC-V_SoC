@@ -1,3 +1,4 @@
+import random
 import cocotb
 from cocotb.triggers import RisingEdge, Timer
 from cocotb.clock import Clock
@@ -18,7 +19,7 @@ async def reset(dut):
 
 
 
-async def axi_write(dut, addr, strb, data):
+async def bus_write(dut, addr, strb, data):
     cocotb.log.info(f"WRITE addr=0x{addr:08X} data=0x{data:08X}")
 # Address
     dut.core_aw_addr.value  = addr
@@ -55,27 +56,25 @@ async def axi_write(dut, addr, strb, data):
     await RisingEdge(dut.clk_i)
 
 
-async def axi_read(dut, addr):
-# Address
+async def bus_read(dut, addr):
     cocotb.log.info(f"READ addr=0x{addr:08X}")
+# Address
     dut.core_ar_addr.value  = addr
     dut.core_ar_valid.value = 1
     
     # Wait for AR handshake
     while not (dut.core_ar_valid.value and dut.core_ar_ready.value):
         await RisingEdge(dut.clk_i)
-        cocotb.log.info("tick")
     cocotb.log.info("AR handshake complete")
 
     dut.core_ar_valid.value = 0
     
 # Data
-    dut.core_r_ready.value  = 1                 # Change location where r_ready = 1 for testing
+    dut.core_r_ready.value  = 1
 
     # Wait for R handshake
     while not dut.core_r_valid.value:
         await RisingEdge(dut.clk_i)
-        cocotb.log.info("tick")
     cocotb.log.info("R handshake complete")
 
     dut.core_r_ready.value = 0
@@ -87,26 +86,43 @@ async def axi_read(dut, addr):
     
     return data
 
-
 @cocotb.test()
 async def test_bus(dut):
-    cocotb.log.info("Starting bus_fabric basic test")
-
     cocotb.start_soon(Clock(dut.clk_i, 10, unit="ns").start())
-
     await reset(dut)
 
-    test_addr = 0x0000_0010
-    test_strb = 0xF
-    test_data = 0xDEADBEEF
+    scoreboard = {}
 
-    await axi_write(dut, test_addr, test_strb, test_data)
-    readback = await axi_read(dut, test_addr)
-    
-    cocotb.log.info(
-        f"Readback check: got=0x{readback:08X} expected=0x{test_data:08X}"
-    )
+    for _ in range(50):
+        addr = random.randint(0, 511) * 4
+        data = random.getrandbits(32)
+        scoreboard[addr] = data
+        
+        await bus_write(dut, addr, 0xF, data)
 
-    assert readback == test_data
-    
-    cocotb.log.info("Basic write/read test PASSED")
+    for addr, expected_data in scoreboard.items():
+        actual_data = await bus_read(dut, addr)
+        assert actual_data == expected_data, f"Mismatch at {hex(addr)}!"
+        
+#@cocotb.test()
+#async def test_bus(dut):
+#    cocotb.log.info("Starting bus_fabric basic test")
+#
+#    cocotb.start_soon(Clock(dut.clk_i, 10, unit="ns").start())
+#
+#    await reset(dut)
+#
+#    test_addr = 0x0000_0010
+#    test_strb = 0xF
+#    test_data = 0xDEADBEEF
+#
+#    await bus_write(dut, test_addr, test_strb, test_data)
+#    readback = await bus_read(dut, test_addr)
+#    
+#    cocotb.log.info(
+#        f"Readback check: got=0x{readback:08X} expected=0x{test_data:08X}"
+#    )
+#
+#    assert readback == test_data
+#    
+#    cocotb.log.info("Basic write/read test PASSED")

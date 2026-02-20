@@ -143,7 +143,6 @@ module bus_fabric #(
     sel_target_if_w_valid = 1'b0;
     sel_target_if_w_ready = 1'b0;
 
-
     for (int i = 0; i < NumTargets; i++) begin
       sel_target_if_w_valid |= (wr_sel_onehot[i] & w_valid_from_tgt[i]);
       sel_target_if_w_ready |= (wr_sel_onehot[i] & w_ready_from_tgt[i]);
