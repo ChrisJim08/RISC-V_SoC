@@ -8,7 +8,7 @@ module ram_bus_adapter #(
   input logic rst_i,
 
 // Memory block
-  output logic    mem_wr_en_o,
+  output logic                    mem_wr_en_o,
   output logic [AddressWidth-1:0] mem_addr_o,
   output logic [DataWidth-1:0]    mem_wr_data_o,
   input  logic [DataWidth-1:0]    mem_r_data_i,
@@ -104,7 +104,7 @@ module ram_bus_adapter #(
     end
     else if (rd_inflight || ar_hs) begin
       mem_addr_o    = ar_hs ? bus_if.ar_addr : ar_addr_q;
-      bus_if.r_data = mem_r_data_i;                         // buffer r_data for mem's synchrous read TODO
+      bus_if.r_data = mem_r_data_i;                         // TODO buffer r_data for mem's synchrous read
     end
   end
   
