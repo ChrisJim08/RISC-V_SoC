@@ -87,8 +87,11 @@ async def bus_read(dut, addr):
     return data
 
 @cocotb.test()
-async def test_bus(dut):
+async def test_basic_randomized(dut):
+    cocotb.log.info("Starting bus_fabric basic randomized test")
+    
     cocotb.start_soon(Clock(dut.clk_i, 10, unit="ns").start())
+    
     await reset(dut)
 
     scoreboard = {}
@@ -102,27 +105,4 @@ async def test_bus(dut):
 
     for addr, expected_data in scoreboard.items():
         actual_data = await bus_read(dut, addr)
-        assert actual_data == expected_data, f"Mismatch at {hex(addr)}!"
-        
-#@cocotb.test()
-#async def test_bus(dut):
-#    cocotb.log.info("Starting bus_fabric basic test")
-#
-#    cocotb.start_soon(Clock(dut.clk_i, 10, unit="ns").start())
-#
-#    await reset(dut)
-#
-#    test_addr = 0x0000_0010
-#    test_strb = 0xF
-#    test_data = 0xDEADBEEF
-#
-#    await bus_write(dut, test_addr, test_strb, test_data)
-#    readback = await bus_read(dut, test_addr)
-#    
-#    cocotb.log.info(
-#        f"Readback check: got=0x{readback:08X} expected=0x{test_data:08X}"
-#    )
-#
-#    assert readback == test_data
-#    
-#    cocotb.log.info("Basic write/read test PASSED")
+        assert actual_data == expected_data, f"Mismatch at {hex(addr)}"
