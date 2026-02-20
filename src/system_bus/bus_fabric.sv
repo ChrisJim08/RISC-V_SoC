@@ -55,7 +55,7 @@ module bus_fabric #(
   assign aw_handshake = core_if.aw_valid && core_if.aw_ready;
 
   // Write data (W)
-  assign core_w_handshake   = core_if.aw_valid  && core_if.aw_ready;
+  assign core_w_handshake   = core_if.w_valid  && core_if.w_ready;
   assign target_w_handshake = sel_target_if_w_valid && sel_target_if_w_ready;
 
   // Write response (B)
