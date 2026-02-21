@@ -1,8 +1,10 @@
 module bus_fabric_top #(
-  localparam int unsigned AddressWidth = 32,
-  localparam int unsigned DataWidth    = 32,
-  localparam int unsigned StrobeWidth = DataWidth/8,
-  localparam int unsigned NumTargets  = 2
+  localparam int unsigned AddressWidth  = 32,
+  localparam int unsigned DataWidth     = 32,
+  parameter  int unsigned MemDepthWords = 2048,
+  localparam int unsigned MemIdxWidth   = $clog2(MemDepthWords),
+  localparam int unsigned StrobeWidth   = DataWidth/8,
+  localparam int unsigned NumTargets    = 2
 )(
   input  logic clk_i,
   input  logic rst_i
@@ -45,14 +47,13 @@ module bus_fabric_top #(
   );
 
   mem #(
-    .AddressWidth(AddressWidth),
     .DataWidth(DataWidth),
-    .DepthWords(2048)
+    .DepthWords(MemDepthWords)
   ) memory (
     .clk_i(clk_i),
     .wr_en_i(mem_wr_en),
     .byte_en_i(mem_byte_en),
-    .addr_i(mem_addr),
+    .addr_i(mem_addr[MemIdxWidth+1:2]),
     .wr_data_i(mem_wr_data),
     .r_data_o(mem_r_data)
   );
